@@ -30,6 +30,9 @@ yarn-error.log*
 .questions-pool.json
 .game-sessions.json
 
+# Large source files (too big for GitHub)
+filtrelenmis_soru_cevaplar.json
+
 # IDE files
 .vscode/
 .idea/
