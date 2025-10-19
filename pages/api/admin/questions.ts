@@ -36,7 +36,8 @@ export default async function handler(
 
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
-    return res.status(200).end()
+    res.status(200).json({ success: true, message: 'CORS preflight OK' })
+    return
   }
 
   if (req.method !== 'POST') {
