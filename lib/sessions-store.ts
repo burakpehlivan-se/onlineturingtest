@@ -60,7 +60,14 @@ export function saveSessions(sessions: Record<string, GameSession>): void {
 
 export function getSession(sessionId: string): GameSession | null {
   const sessions = loadSessions()
-  return sessions[sessionId] || null
+  console.log('🔍 Session Store - Looking for:', sessionId)
+  console.log('🔍 Session Store - Available sessions:', Object.keys(sessions))
+  console.log('🔍 Session Store - Total sessions:', Object.keys(sessions).length)
+  
+  const session = sessions[sessionId] || null
+  console.log('🔍 Session Store - Found:', session ? 'YES' : 'NO')
+  
+  return session
 }
 
 export function saveSession(sessionId: string, session: GameSession): void {

@@ -21,9 +21,14 @@ export default async function handler(
 
   try {
     const { nickname, difficulty } = req.body as StartGameRequest
+    console.log('🎮 Game Start Request:', { nickname, difficulty })
 
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    createSession(sessionId, nickname, difficulty)
+    console.log('🆕 Creating session:', sessionId)
+    
+    const session = createSession(sessionId, nickname, difficulty)
+    console.log('✅ Session created:', session)
+    
     logGameStart(nickname, difficulty, sessionId)
 
     res.status(200).json({ sessionId })

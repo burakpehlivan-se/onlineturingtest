@@ -33,10 +33,14 @@ export default async function handler(
       return res.status(400).json({ error: 'Session ID required' })
     }
 
+    console.log('🔍 Next Question Request for sessionId:', sessionId)
     logQuestionRequested(sessionId)
+    
     const session = getSession(sessionId)
-
+    console.log('📋 Session lookup result:', session ? 'Found' : 'Not Found')
+    
     if (!session) {
+      console.error('❌ Session not found:', sessionId)
       return res.status(404).json({ error: 'Session not found' })
     }
 
