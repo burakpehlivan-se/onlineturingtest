@@ -114,6 +114,9 @@
                     <button onclick="clearAllQuestions()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
                         🗑️ Hepsini Sil
                     </button>
+                    <button onclick="testConnection()" class="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700">
+                        🧪 Bağlantı Test
+                    </button>
                     <button onclick="deployQuestions()" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
                         🚀 Siteye Gönder
                     </button>
@@ -837,18 +840,86 @@ Soru: ${turkishQuestion}`;
 
         // Not: Eski streaming fonksiyonları kaldırıldı, artık sabit dosya yolu kullanılıyor
 
+        async function testConnection() {
+            addLog(`🧪 Bağlantı testi başlatılıyor...`, 'info');
+            
+            const siteUrl = prompt('Test edilecek site URL\'si:', 'https://guileless-custard-968c67.netlify.app');
+            const adminKey = prompt('Admin Key:', 'burkiadmin');
+            
+            if (!siteUrl || !adminKey) {
+                addLog(`Test iptal edildi`, 'warning');
+                return;
+            }
+
+            try {
+                // 1. GET test
+                addLog(`1. GET test: ${siteUrl}/api/admin/test`, 'process');
+                const getResponse = await fetch(`${siteUrl}/api/admin/test`);
+                addLog(`GET yanıt: ${getResponse.status} ${getResponse.statusText}`, 'info');
+                
+                if (getResponse.ok) {
+                    const getData = await getResponse.json();
+                    addLog(`GET sonuç: ${JSON.stringify(getData)}`, 'success');
+                }
+
+                // 2. POST test (admin key)
+                addLog(`2. POST test: Admin key kontrolü`, 'process');
+                const postResponse = await fetch(`${siteUrl}/api/admin/test`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        adminKey: adminKey
+                    })
+                });
+
+                addLog(`POST yanıt: ${postResponse.status} ${postResponse.statusText}`, 'info');
+                
+                if (postResponse.ok) {
+                    const postData = await postResponse.json();
+                    addLog(`POST sonuç: ${JSON.stringify(postData)}`, postData.adminKeyValid ? 'success' : 'error');
+                    
+                    if (postData.adminKeyValid) {
+                        alert('✅ Bağlantı başarılı! Admin key geçerli.');
+                    } else {
+                        alert('❌ Admin key geçersiz! Lütfen kontrol edin.');
+                    }
+                } else {
+                    const errorText = await postResponse.text();
+                    addLog(`POST hata: ${errorText}`, 'error');
+                    alert(`❌ Bağlantı hatası: ${postResponse.status} ${postResponse.statusText}`);
+                }
+
+            } catch (error) {
+                addLog(`❌ Test hatası: ${error.message}`, 'error');
+                alert(`❌ Test hatası: ${error.message}`);
+            }
+        }
+
         async function deployQuestions() {
             if (questions.length === 0) {
                 alert('Henüz soru yok!');
                 return;
             }
 
+            addLog(`Siteye gönderme işlemi başlatılıyor...`, 'info');
+            addLog(`Gönderilecek soru sayısı: ${questions.length}`, 'info');
+
             const siteUrl = prompt('Site URL\'sini girin:', 'https://guileless-custard-968c67.netlify.app');
-            const adminKey = prompt('Admin Key\'i girin:');
+            const adminKey = prompt('Admin Key\'i girin:', 'burkiadmin');
             
-            if (!siteUrl || !adminKey) return;
+            if (!siteUrl || !adminKey) {
+                addLog(`İşlem iptal edildi - URL veya Admin Key girilmedi`, 'warning');
+                return;
+            }
+
+            addLog(`Hedef site: ${siteUrl}`, 'info');
+            addLog(`Admin key: ${adminKey.substring(0, 3)}***`, 'info');
 
             try {
+                addLog(`API isteği gönderiliyor...`, 'process');
+                
                 const response = await fetch(`${siteUrl}/api/admin/bulk-upload`, {
                     method: 'POST',
                     headers: {
@@ -860,14 +931,27 @@ Soru: ${turkishQuestion}`;
                     })
                 });
 
+                addLog(`API yanıtı alındı: ${response.status} ${response.statusText}`, 'info');
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    addLog(`HTTP Hata ${response.status}: ${errorText}`, 'error');
+                    alert(`HTTP Hata ${response.status}: ${response.statusText}\n${errorText}`);
+                    return;
+                }
+
                 const result = await response.json();
+                addLog(`API yanıt içeriği: ${JSON.stringify(result)}`, 'info');
                 
                 if (result.success) {
+                    addLog(`✅ ${questions.length} soru başarıyla siteye yüklendi!`, 'success');
                     alert(`Başarılı! ${questions.length} soru siteye yüklendi.`);
                 } else {
+                    addLog(`❌ Yükleme başarısız: ${result.message}`, 'error');
                     alert('Hata: ' + result.message);
                 }
             } catch (error) {
+                addLog(`❌ Bağlantı hatası: ${error.message}`, 'error');
                 alert('Bağlantı hatası: ' + error.message);
             }
         }
