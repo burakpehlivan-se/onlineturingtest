@@ -24,7 +24,11 @@ export class QuestionProcessor {
   private originalDataPath: string
 
   constructor() {
-    this.originalDataPath = path.join(process.cwd(), 'filtrelenmis_soru_cevaplar.json')
+    // Use demo questions if main file doesn't exist (for Netlify deployment)
+    const mainFile = path.join(process.cwd(), 'filtrelenmis_soru_cevaplar.json')
+    const demoFile = path.join(process.cwd(), 'demo-questions.json')
+    
+    this.originalDataPath = fs.existsSync(mainFile) ? mainFile : demoFile
   }
 
   /**

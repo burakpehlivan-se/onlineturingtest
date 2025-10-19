@@ -1,0 +1,22 @@
+[
+  {
+    "question_title": "What is the best way to learn programming?",
+    "best_answer": "Start with the basics, practice regularly, and build projects. Don't just read about programming - actually write code every day."
+  },
+  {
+    "question_title": "How do I stay motivated while learning?",
+    "best_answer": "Set small, achievable goals and celebrate your progress. Join a community of learners and don't be afraid to ask for help."
+  },
+  {
+    "question_title": "What programming language should I learn first?",
+    "best_answer": "Python is great for beginners because of its simple syntax. JavaScript is also good if you want to build web applications."
+  },
+  {
+    "question_title": "How long does it take to become a programmer?",
+    "best_answer": "It varies, but with consistent practice, you can learn the basics in 3-6 months. Becoming proficient takes 1-2 years of regular coding."
+  },
+  {
+    "question_title": "What are the most important skills for a programmer?",
+    "best_answer": "Problem-solving, logical thinking, attention to detail, and the ability to learn continuously. Communication skills are also very important."
+  }
+]

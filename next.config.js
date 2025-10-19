@@ -2,6 +2,12 @@
 const nextConfig = {
   reactStrictMode: true,
   
+  // Netlify deployment settings
+  trailingSlash: true,
+  images: {
+    unoptimized: true
+  },
+  
   // Security headers
   async headers() {
     return [
