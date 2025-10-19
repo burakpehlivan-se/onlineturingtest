@@ -70,6 +70,19 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Real-time Log Görüntüleme -->
+                    <div id="processLogs" class="hidden mt-4">
+                        <div class="bg-gray-900 text-green-400 rounded-md p-4 max-h-96 overflow-y-auto font-mono text-sm">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="text-green-300 font-semibold">📋 İşlem Logları</h4>
+                                <button onclick="clearLogs()" class="text-gray-400 hover:text-white text-xs">Temizle</button>
+                            </div>
+                            <div id="logContent" class="space-y-1">
+                                <!-- Loglar buraya eklenecek -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -108,6 +121,64 @@
 
         // Sayfa yüklendiğinde soruları yükle
         document.addEventListener('DOMContentLoaded', loadQuestions);
+
+        // Log fonksiyonları
+        function addLog(message, type = 'info') {
+            const logContent = document.getElementById('logContent');
+            const processLogs = document.getElementById('processLogs');
+            
+            // Log alanını göster
+            processLogs.classList.remove('hidden');
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            
+            let icon = '📝';
+            let color = 'text-green-400';
+            
+            switch(type) {
+                case 'success':
+                    icon = '✅';
+                    color = 'text-green-300';
+                    break;
+                case 'error':
+                    icon = '❌';
+                    color = 'text-red-400';
+                    break;
+                case 'warning':
+                    icon = '⚠️';
+                    color = 'text-yellow-400';
+                    break;
+                case 'process':
+                    icon = '🔄';
+                    color = 'text-blue-400';
+                    break;
+                case 'ai':
+                    icon = '🤖';
+                    color = 'text-purple-400';
+                    break;
+                case 'translate':
+                    icon = '🌐';
+                    color = 'text-cyan-400';
+                    break;
+            }
+            
+            logEntry.className = `${color} text-xs`;
+            logEntry.innerHTML = `<span class="text-gray-500">[${timestamp}]</span> ${icon} ${message}`;
+            
+            logContent.appendChild(logEntry);
+            
+            // Otomatik scroll
+            logContent.scrollTop = logContent.scrollHeight;
+            
+            // Console'a da yazdır
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearLogs() {
+            const logContent = document.getElementById('logContent');
+            logContent.innerHTML = '';
+        }
 
         function loadQuestions() {
             const saved = localStorage.getItem('turingTestQuestions');
@@ -353,17 +424,17 @@
                 const file = fileInput.files[0];
                 const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
                 
-                console.log(`📁 Dosya: ${file.name} (${fileSize} MB)`);
+                addLog(`Dosya yüklendi: ${file.name} (${fileSize} MB)`, 'info');
                 
                 // Büyük dosya kontrolü (10MB üzeri)
                 if (file.size > 10 * 1024 * 1024) {
-                    console.log(`📊 Büyük dosya tespit edildi, streaming okuma başlatılıyor...`);
+                    addLog(`Büyük dosya tespit edildi, streaming okuma modu aktif`, 'warning');
                     processStatus.textContent = 'Büyük dosyadan rastgele sorular seçiliyor...';
                     
                     // Streaming ile rastgele soru seç
                     rawQuestionsData = await extractRandomQuestionsFromLargeFile(file, parseInt(processCount) || 5);
                 } else {
-                    console.log(`📊 Normal boyut dosya, tam okuma yapılıyor...`);
+                    addLog(`Normal boyut dosya, tam okuma yapılıyor`, 'info');
                     processStatus.textContent = 'Dosya okunuyor...';
                     
                     // Normal okuma
@@ -374,9 +445,10 @@
                     // Rastgele seç
                     const totalToProcess = processCount === 'all' ? rawQuestionsData.length : parseInt(processCount);
                     rawQuestionsData = selectRandomQuestions(rawQuestionsData, totalToProcess);
+                    addLog(`${rawQuestionsData.length} soru rastgele seçildi`, 'success');
                 }
 
-                console.log(`📁 ${rawQuestionsData.length} soru seçildi ve işlenmeye hazır`);
+                addLog(`Toplam ${rawQuestionsData.length} soru işlenmeye hazır`, 'success');
                 
                 // Artık rawQuestionsData zaten seçilmiş sorular içeriyor
                 const questionsToProcess = rawQuestionsData;
@@ -399,11 +471,14 @@
                     }
                 }
                 
+                addLog(`🎉 İşlem tamamlandı! ${questionsToProcess.length} soru başarıyla işlendi`, 'success');
+                addLog(`Toplam soru havuzu: ${questions.length} soru`, 'info');
+                
                 alert(`✅ ${questionsToProcess.length} soru başarıyla işlendi ve eklendi!`);
                 displayQuestions();
                 
             } catch (error) {
-                console.error('❌ Detaylı hata bilgisi:', error);
+                addLog(`Kritik hata: ${error.message}`, 'error');
                 
                 let errorMessage = 'Soru işleme hatası: ';
                 
@@ -412,14 +487,16 @@
                     errorMessage += '• Dosya geçerli JSON formatında mı?\n';
                     errorMessage += '• Dosya boyutu çok büyük mü?\n';
                     errorMessage += '• Dosyada özel karakterler var mı?';
+                    addLog('JSON parse hatası - dosya formatını kontrol edin', 'error');
                 } else if (error.message.includes('fetch')) {
                     errorMessage += 'API bağlantı hatası. OpenRouter API key\'inizi kontrol edin.';
+                    addLog('OpenRouter API bağlantı hatası', 'error');
                 } else {
                     errorMessage += error.message;
+                    addLog(`Bilinmeyen hata: ${error.message}`, 'error');
                 }
                 
                 alert(errorMessage);
-                console.error('Processing error:', error);
             } finally {
                 processBtn.disabled = false;
                 processBtn.textContent = '🔄 Soruları İşle (Çevir + AI Cevap)';
@@ -435,19 +512,21 @@
                 const originalAnswer = rawQuestion.best_answer || rawQuestion.answer || '';
 
                 if (!originalQuestion || !originalAnswer) {
-                    console.warn(`⚠️ Soru ${current}: Eksik veri, atlanıyor`);
+                    addLog(`Soru ${current}/${total}: Eksik veri, atlanıyor`, 'warning');
                     return;
                 }
 
-                console.log(`🔄 Soru ${current}/${total} işleniyor: ${originalQuestion.substring(0, 50)}...`);
+                addLog(`Soru ${current}/${total} işleniyor: "${originalQuestion.substring(0, 60)}..."`, 'process');
 
                 // 1. Soru ve cevabı Türkçeye çevir
+                addLog(`Çeviri başlatılıyor...`, 'translate');
                 const translationResult = await translateQuestionAndAnswer(apiKey, originalQuestion, originalAnswer);
-                console.log(`📝 Çeviri tamamlandı: ${translationResult.question.substring(0, 30)}...`);
+                addLog(`Çeviri tamamlandı: "${translationResult.question.substring(0, 50)}..."`, 'translate');
                 
                 // 2. AI cevabı üret (forum kullanıcısı tarzında)
+                addLog(`AI cevabı üretiliyor...`, 'ai');
                 const aiAnswer = await generateAIAnswer(apiKey, translationResult.question);
-                console.log(`🤖 AI cevabı üretildi: ${aiAnswer.substring(0, 30)}...`);
+                addLog(`AI cevabı: "${aiAnswer.substring(0, 60)}..."`, 'ai');
 
                 // 3. İşlenmiş soruyu oluştur (eski format)
                 const processedQuestion = {
@@ -464,10 +543,10 @@
                 questions.push(processedQuestion);
                 saveToLocalStorage();
                 
-                console.log(`✅ Soru ${current}/${total} başarıyla işlendi ve eklendi!`);
+                addLog(`Soru ${current}/${total} başarıyla işlendi ve yerel havuza eklendi!`, 'success');
 
             } catch (error) {
-                console.error(`❌ Soru ${current} işlenirken hata:`, error.message);
+                addLog(`Soru ${current}/${total} işlenirken hata: ${error.message}`, 'error');
                 // Hata olsa bile devam et
             }
         }
@@ -598,18 +677,26 @@ Soru: ${turkishQuestion}`;
             const maxAttempts = targetCount * 3; // Her soru için 3 deneme
             const foundQuestions = [];
             
-            console.log(`🔍 ${targetCount} soru için büyük dosyada arama başlatılıyor...`);
+            addLog(`${targetCount} soru için büyük dosyada streaming arama başlatılıyor...`, 'process');
+            addLog(`Chunk boyutu: 1MB, Maksimum deneme: ${maxAttempts}`, 'info');
             
             for (let attempt = 0; attempt < maxAttempts && foundQuestions.length < targetCount; attempt++) {
                 try {
                     // Rastgele pozisyon seç
                     const randomPosition = Math.floor(Math.random() * (file.size - chunkSize));
+                    const positionMB = (randomPosition / 1024 / 1024).toFixed(1);
+                    
+                    addLog(`Deneme ${attempt + 1}/${maxAttempts}: ${positionMB}MB pozisyonundan okuma`, 'process');
                     
                     // Chunk oku
                     const chunk = await readFileChunk(file, randomPosition, chunkSize);
                     
                     // JSON objelerini bul
                     const questions = extractQuestionsFromChunk(chunk);
+                    
+                    if (questions.length > 0) {
+                        addLog(`Bu chunk'ta ${questions.length} soru bulundu`, 'info');
+                    }
                     
                     // Bulunan soruları ekle (tekrar etmeyecek şekilde)
                     for (const question of questions) {
@@ -623,16 +710,17 @@ Soru: ${turkishQuestion}`;
                         
                         if (!isDuplicate) {
                             foundQuestions.push(question);
-                            console.log(`✅ Soru bulundu (${foundQuestions.length}/${targetCount}): ${(question.question_title || question.question || '').substring(0, 50)}...`);
+                            const questionText = (question.question_title || question.question || '').substring(0, 50);
+                            addLog(`Soru ${foundQuestions.length}/${targetCount} seçildi: "${questionText}..."`, 'success');
                         }
                     }
                     
                 } catch (error) {
-                    console.warn(`⚠️ Chunk okuma hatası (deneme ${attempt + 1}):`, error.message);
+                    addLog(`Chunk okuma hatası (deneme ${attempt + 1}): ${error.message}`, 'warning');
                 }
             }
             
-            console.log(`🎯 Toplam ${foundQuestions.length} benzersiz soru bulundu`);
+            addLog(`Streaming tamamlandı: ${foundQuestions.length} benzersiz soru bulundu`, 'success');
             return foundQuestions;
         }
 
