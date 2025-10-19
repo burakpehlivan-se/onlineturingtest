@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin-login
+Disallow: /api/admin/
+Disallow: /.questions-pool.json
+Disallow: /.game-sessions.json
+
+# Allow main game pages
+Allow: /game
+Allow: /
+
+Sitemap: https://yourdomain.com/sitemap.xml

@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files (keep .env.example)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.production.local
+
+# Platform files
+.DS_Store
+.vercel
+.netlify
+.cache
+
+# Local data files (will be recreated on server)
+.questions-pool.json
+.game-sessions.json
+
+# IDE files
+.vscode/
+.idea/

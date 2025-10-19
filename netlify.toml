@@ -1,0 +1,29 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_ENV = "production"
+
+# Next.js için gerekli ayarlar
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# API rotaları için
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Catch-all redirect for Next.js
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Scheduled function for question processing
+[[functions]]
+  node_bundler = "esbuild"
+
+[functions."api-cron-process-questions"]
+  schedule = "0 */6 * * *"  # Her 6 saatte bir çalışır
