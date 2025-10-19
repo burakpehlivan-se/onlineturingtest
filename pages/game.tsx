@@ -44,15 +44,22 @@ export default function Game() {
     setAnswered(false)
 
     try {
+      console.log('🔍 Frontend - Soru yükleniyor, sessionId:', sessionId)
       const response = await fetch(`/api/game/next-question?sessionId=${sessionId}`)
       
+      console.log('🔍 Frontend - API Response Status:', response.status)
+      
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
+        const errorText = await response.text()
+        console.error('❌ Frontend - API Error:', response.status, errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
       }
       
       const data = await response.json()
+      console.log('🔍 Frontend - API Response Data:', data)
 
       if (data.error) {
+        console.error('❌ Frontend - Data Error:', data.error)
         setFeedback({ type: 'wrong', message: data.error })
         return
       }
