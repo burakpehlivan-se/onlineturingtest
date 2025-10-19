@@ -8,53 +8,18 @@
 </head>
 <body class="bg-gray-100 min-h-screen py-8">
     <div class="max-w-4xl mx-auto px-4">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8 text-center">
-            🔒 Yerel Soru Yönetimi Paneli
+        <h1 class="text-3xl font-bold text-gray-900 mb-4 text-center">
+            🤖 Otomatik Soru İşleme Sistemi
         </h1>
+        
+        <p class="text-gray-600 text-center mb-8">
+            filtrelenmis_soru_cevaplar.json dosyasından rastgele sorular seçip, çevirip, AI cevapları ekleyerek işler
+        </p>
 
-        <!-- Soru Ekleme Yöntemleri -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            
-            <!-- Manuel Soru Ekleme -->
-            <div class="bg-white rounded-lg shadow-md p-6">
+        <!-- Otomatik Soru İşleme Sistemi -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
                 <h2 class="text-xl font-semibold mb-4 flex items-center">
-                    ✏️ Manuel Soru Ekleme
-                </h2>
-                <form id="questionForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Soru</label>
-                        <textarea id="question" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2" 
-                                  placeholder="Soruyu buraya yazın..." required></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">AI Cevabı</label>
-                        <textarea id="answerAI" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2" 
-                                  placeholder="AI'ın vereceği cevap..." required></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">İnsan Cevabı</label>
-                        <textarea id="answerHuman" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2" 
-                                  placeholder="İnsanın vereceği cevap..." required></textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Kaynak</label>
-                        <input type="text" id="source" class="w-full border border-gray-300 rounded-md px-3 py-2" 
-                               placeholder="Örn: Manuel Ekleme" value="Manuel Ekleme">
-                    </div>
-
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
-                        Manuel Soru Ekle
-                    </button>
-                </form>
-            </div>
-
-            <!-- Soru İşleme Pipeline -->
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4 flex items-center">
-                    🔄 Soru İşleme Pipeline
+                    🔄 Otomatik Soru İşleme
                 </h2>
                 
                 <div class="space-y-4">
@@ -65,10 +30,10 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Ham Soru Dosyası Yükle</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">filtrelenmis_soru_cevaplar.json Dosyası</label>
                         <input type="file" id="rawQuestionsFile" accept=".json" 
                                class="w-full border border-gray-300 rounded-md px-3 py-2">
-                        <p class="text-sm text-gray-500 mt-1">demo-questions.json veya filtrelenmis_soru_cevaplar.json</p>
+                        <p class="text-sm text-gray-500 mt-1">Büyük soru havuzu dosyanızı seçin (filtrelenmis_soru_cevaplar.json)</p>
                     </div>
                     
                     <div>
@@ -136,34 +101,6 @@
 
         // Sayfa yüklendiğinde soruları yükle
         document.addEventListener('DOMContentLoaded', loadQuestions);
-
-        // Form submit
-        document.getElementById('questionForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            addQuestion();
-        });
-
-        function addQuestion() {
-            const question = {
-                id: `local_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-                question: document.getElementById('question').value,
-                answerAI: document.getElementById('answerAI').value,
-                answerHuman: document.getElementById('answerHuman').value,
-                source: document.getElementById('source').value || 'Manuel Ekleme',
-                originalQuestion: document.getElementById('originalQuestion').value || '',
-                originalAnswer: '',
-                isTranslated: false
-            };
-
-            questions.push(question);
-            saveToLocalStorage();
-            displayQuestions();
-            
-            // Formu temizle
-            document.getElementById('questionForm').reset();
-            
-            alert('Soru başarıyla eklendi!');
-        }
 
         function loadQuestions() {
             const saved = localStorage.getItem('turingTestQuestions');
@@ -348,9 +285,28 @@
 
                 console.log(`📁 ${rawQuestionsData.length} ham soru yüklendi`);
 
-                // İşlenecek soru sayısını belirle
+                // İşlenecek soru sayısını belirle ve rastgele seç (eski admin mantığı)
                 const totalToProcess = processCount === 'all' ? rawQuestionsData.length : parseInt(processCount);
-                const questionsToProcess = rawQuestionsData.slice(0, totalToProcess);
+                
+                let questionsToProcess;
+                if (processCount === 'all') {
+                    // Tüm sorular seçildiyse karıştır
+                    questionsToProcess = [...rawQuestionsData].sort(() => Math.random() - 0.5);
+                } else {
+                    // Belirli sayıda rastgele soru seç
+                    questionsToProcess = [];
+                    const usedIndices = new Set();
+                    
+                    while (questionsToProcess.length < totalToProcess && usedIndices.size < rawQuestionsData.length) {
+                        const randomIndex = Math.floor(Math.random() * rawQuestionsData.length);
+                        if (!usedIndices.has(randomIndex)) {
+                            usedIndices.add(randomIndex);
+                            questionsToProcess.push(rawQuestionsData[randomIndex]);
+                        }
+                    }
+                }
+                
+                console.log(`🎲 ${questionsToProcess.length} rastgele soru seçildi (toplam ${rawQuestionsData.length} soruda)`);
 
                 processStatus.textContent = `${questionsToProcess.length} soru işleniyor...`;
 
@@ -385,7 +341,7 @@
 
         async function processSingleRawQuestion(apiKey, rawQuestion, current, total) {
             try {
-                // Ham sorudan bilgileri çıkar
+                // Ham sorudan bilgileri çıkar (eski admin panel mantığı)
                 const originalQuestion = rawQuestion.question_title || rawQuestion.question || '';
                 const originalAnswer = rawQuestion.best_answer || rawQuestion.answer || '';
 
@@ -394,19 +350,23 @@
                     return;
                 }
 
-                // Çeviri yap
-                const translationResult = await translateQuestionAndAnswer(apiKey, originalQuestion, originalAnswer);
-                
-                // AI cevabı üret
-                const aiAnswer = await generateAIAnswer(apiKey, translationResult.question);
+                console.log(`🔄 Soru ${current}/${total} işleniyor: ${originalQuestion.substring(0, 50)}...`);
 
-                // İşlenmiş soruyu oluştur
+                // 1. Soru ve cevabı Türkçeye çevir
+                const translationResult = await translateQuestionAndAnswer(apiKey, originalQuestion, originalAnswer);
+                console.log(`📝 Çeviri tamamlandı: ${translationResult.question.substring(0, 30)}...`);
+                
+                // 2. AI cevabı üret (forum kullanıcısı tarzında)
+                const aiAnswer = await generateAIAnswer(apiKey, translationResult.question);
+                console.log(`🤖 AI cevabı üretildi: ${aiAnswer.substring(0, 30)}...`);
+
+                // 3. İşlenmiş soruyu oluştur (eski format)
                 const processedQuestion = {
-                    id: `processed_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+                    id: `q_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
                     question: translationResult.question,
                     answerAI: aiAnswer,
                     answerHuman: translationResult.answer,
-                    source: rawQuestion.source || 'Processed Question',
+                    source: rawQuestion.source || 'Filtered Questions',
                     originalQuestion: originalQuestion,
                     originalAnswer: originalAnswer,
                     isTranslated: true
@@ -415,10 +375,11 @@
                 questions.push(processedQuestion);
                 saveToLocalStorage();
                 
-                console.log(`✅ Soru ${current}/${total} işlendi:`, processedQuestion.question.substring(0, 50) + '...');
+                console.log(`✅ Soru ${current}/${total} başarıyla işlendi ve eklendi!`);
 
             } catch (error) {
-                console.error(`❌ Soru ${current} işlenirken hata:`, error);
+                console.error(`❌ Soru ${current} işlenirken hata:`, error.message);
+                // Hata olsa bile devam et
             }
         }
 
