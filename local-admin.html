@@ -32,8 +32,15 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">filtrelenmis_soru_cevaplar.json Dosyası</label>
                         <input type="file" id="rawQuestionsFile" accept=".json" 
-                               class="w-full border border-gray-300 rounded-md px-3 py-2">
+                               class="w-full border border-gray-300 rounded-md px-3 py-2"
+                               onchange="previewFile()">
                         <p class="text-sm text-gray-500 mt-1">Büyük soru havuzu dosyanızı seçin (filtrelenmis_soru_cevaplar.json)</p>
+                        
+                        <!-- Dosya Önizleme -->
+                        <div id="filePreview" class="hidden mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                            <h4 class="font-medium text-gray-700 mb-2">Dosya Önizleme:</h4>
+                            <div id="previewContent" class="text-sm text-gray-600"></div>
+                        </div>
                     </div>
                     
                     <div>
@@ -253,6 +260,54 @@
         // Ham soruları işleme pipeline'ı
         let rawQuestionsData = [];
 
+        // Dosya önizleme fonksiyonu
+        async function previewFile() {
+            const fileInput = document.getElementById('rawQuestionsFile');
+            const filePreview = document.getElementById('filePreview');
+            const previewContent = document.getElementById('previewContent');
+            
+            if (!fileInput.files[0]) {
+                filePreview.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const file = fileInput.files[0];
+                let content = await readFileAsText(file);
+                
+                // Dosya bilgileri
+                const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+                let previewText = `📁 <strong>${file.name}</strong><br>`;
+                previewText += `📊 Boyut: ${fileSize} MB<br>`;
+                
+                // İlk 500 karakteri göster
+                const preview = content.substring(0, 500);
+                previewText += `📝 İçerik önizleme:<br>`;
+                previewText += `<code style="background: #f3f4f6; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; font-size: 12px; overflow-x: auto;">${preview.replace(/</g, '&lt;').replace(/>/g, '&gt;')}${content.length > 500 ? '...' : ''}</code>`;
+                
+                // JSON formatı kontrol et
+                try {
+                    content = content.trim();
+                    if (content.charCodeAt(0) === 0xFEFF) {
+                        content = content.slice(1);
+                    }
+                    
+                    const testData = JSON.parse(content);
+                    previewText += `<br>✅ <span style="color: green;">JSON formatı geçerli</span><br>`;
+                    previewText += `📊 Toplam ${Array.isArray(testData) ? testData.length : 'bilinmeyen'} öğe`;
+                } catch (e) {
+                    previewText += `<br>❌ <span style="color: red;">JSON format hatası: ${e.message}</span>`;
+                }
+                
+                previewContent.innerHTML = previewText;
+                filePreview.classList.remove('hidden');
+                
+            } catch (error) {
+                previewContent.innerHTML = `❌ Dosya okunamadı: ${error.message}`;
+                filePreview.classList.remove('hidden');
+            }
+        }
+
         async function processRawQuestions() {
             const apiKey = document.getElementById('apiKey').value;
             const fileInput = document.getElementById('rawQuestionsFile');
@@ -280,10 +335,30 @@
             try {
                 // Dosyayı oku
                 const file = fileInput.files[0];
-                const fileContent = await readFileAsText(file);
+                let fileContent = await readFileAsText(file);
+                
+                console.log(`📁 Dosya okundu: ${file.name} (${fileContent.length} karakter)`);
+                
+                // JSON formatını temizle ve kontrol et
+                fileContent = fileContent.trim();
+                
+                // BOM (Byte Order Mark) karakterini kaldır
+                if (fileContent.charCodeAt(0) === 0xFEFF) {
+                    fileContent = fileContent.slice(1);
+                }
+                
+                // Birden fazla JSON objesi varsa sadece ilkini al
+                const firstBraceIndex = fileContent.indexOf('[');
+                const lastBraceIndex = fileContent.lastIndexOf(']');
+                
+                if (firstBraceIndex !== -1 && lastBraceIndex !== -1) {
+                    fileContent = fileContent.substring(firstBraceIndex, lastBraceIndex + 1);
+                }
+                
+                console.log(`🔧 JSON temizlendi, parse ediliyor...`);
                 rawQuestionsData = JSON.parse(fileContent);
 
-                console.log(`📁 ${rawQuestionsData.length} ham soru yüklendi`);
+                console.log(`📁 ${rawQuestionsData.length} ham soru başarıyla yüklendi`);
 
                 // İşlenecek soru sayısını belirle ve rastgele seç (eski admin mantığı)
                 const totalToProcess = processCount === 'all' ? rawQuestionsData.length : parseInt(processCount);
@@ -329,7 +404,22 @@
                 displayQuestions();
                 
             } catch (error) {
-                alert('Soru işleme hatası: ' + error.message);
+                console.error('❌ Detaylı hata bilgisi:', error);
+                
+                let errorMessage = 'Soru işleme hatası: ';
+                
+                if (error.message.includes('JSON.parse')) {
+                    errorMessage += 'JSON dosyası geçersiz format içeriyor. Lütfen kontrol edin:\n';
+                    errorMessage += '• Dosya geçerli JSON formatında mı?\n';
+                    errorMessage += '• Dosya boyutu çok büyük mü?\n';
+                    errorMessage += '• Dosyada özel karakterler var mı?';
+                } else if (error.message.includes('fetch')) {
+                    errorMessage += 'API bağlantı hatası. OpenRouter API key\'inizi kontrol edin.';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                alert(errorMessage);
                 console.error('Processing error:', error);
             } finally {
                 processBtn.disabled = false;
