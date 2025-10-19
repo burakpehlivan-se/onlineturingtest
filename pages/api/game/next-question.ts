@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getSession } from '../../../lib/sessions-store'
+import { getSession, updateSession } from '../../../lib/sessions-store'
 import { loadQuestionsPool } from '../../../lib/questions-store'
 import { logQuestionRequested, logQuestionRetrieved, logAICommand, logError } from '../../../lib/logger'
 
@@ -103,6 +103,13 @@ export default async function handler(
       lives: session.lives,
       gameOver: false,
     }
+
+    // Save current question info to session for answer validation
+    updateSession(sessionId, {
+      ...session,
+      currentQuestionId: randomQuestion.id,
+      currentCorrectAnswer: correctAnswer
+    })
 
     console.log(`💬 SENDING RESPONSE:`, {
       questionId: responseData.question.id,

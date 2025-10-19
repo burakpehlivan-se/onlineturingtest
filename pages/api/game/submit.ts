@@ -44,7 +44,8 @@ export default async function handler(
       return res.status(404).json({ error: 'Session not found' })
     }
 
-    const { correctAnswer } = req.body as SubmitAnswerRequest
+    // Get correct answer from session (more secure than trusting frontend)
+    const correctAnswer = session.currentCorrectAnswer || req.body.correctAnswer
     const isCorrect = choice === correctAnswer
     let newScore = session.score
     let newLives = session.lives

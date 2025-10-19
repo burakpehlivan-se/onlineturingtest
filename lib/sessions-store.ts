@@ -12,10 +12,22 @@ interface GameSession {
   lives: number
   questionsAnswered: number
   createdAt: string
+  currentQuestionId?: string
+  currentCorrectAnswer?: 'A' | 'B'
 }
 
 // Memory-based sessions for Netlify (serverless environment)
-let memoryStore: Record<string, GameSession> = {}
+// Use global to persist across function calls
+declare global {
+  var __sessionStore: Record<string, GameSession> | undefined
+}
+
+// Initialize global store if not exists
+if (!global.__sessionStore) {
+  global.__sessionStore = {}
+}
+
+const memoryStore = global.__sessionStore
 
 export function loadSessions(): Record<string, GameSession> {
   // Try file first, fallback to memory
@@ -24,18 +36,18 @@ export function loadSessions(): Record<string, GameSession> {
       const data = fs.readFileSync(SESSIONS_FILE, 'utf-8')
       const fileSessions = JSON.parse(data)
       // Merge with memory store
-      memoryStore = { ...memoryStore, ...fileSessions }
-      return memoryStore
+      Object.assign(global.__sessionStore!, fileSessions)
+      return global.__sessionStore!
     }
   } catch (error) {
     logger.error('Session yükleme hatası', error)
   }
-  return memoryStore
+  return global.__sessionStore!
 }
 
 export function saveSessions(sessions: Record<string, GameSession>): void {
   // Always save to memory
-  memoryStore = sessions
+  global.__sessionStore = sessions
   
   // Try to save to file (may fail on Netlify)
   try {
