@@ -337,11 +337,12 @@
         let rawQuestionsData = [];
 
         // Sabit dosya yolundan okuma fonksiyonu
-        async function loadQuestionsFromFixedPath() {
+        async function loadQuestionsFromFixedPath(targetCount = 10) {
             const filePath = '/home/burki/Code/onlineTuringTest/filtrelenmis_soru_cevaplar.json';
             
             try {
                 addLog(`Sabit dosya yolundan okuma başlatılıyor: ${filePath}`, 'info');
+                addLog(`Hedef soru sayısı: ${targetCount}`, 'info');
                 
                 // Fetch ile dosyayı oku
                 const response = await fetch(`http://localhost:8080/filtrelenmis_soru_cevaplar.json`);
@@ -359,7 +360,7 @@
                 if (fileContent.length > 10 * 1024 * 1024) {
                     addLog(`Büyük dosya tespit edildi, streaming okuma gerekli`, 'warning');
                     // Büyük dosya için streaming simülasyonu
-                    return await simulateStreamingFromContent(fileContent);
+                    return await simulateStreamingFromContent(fileContent, targetCount);
                 } else {
                     addLog(`Normal boyut dosya, tam parse yapılıyor`, 'info');
                     const cleanContent = cleanJsonContent(fileContent);
@@ -379,9 +380,34 @@
             addLog(`Büyük içerikten ${targetCount} soru seçiliyor...`, 'process');
             
             try {
-                // İçeriği temizle ve parse et
-                const cleanContent = cleanJsonContent(content);
-                const allQuestions = JSON.parse(cleanContent);
+                addLog(`İçerik temizleme başlatılıyor... (${(content.length / 1024 / 1024).toFixed(1)} MB)`, 'process');
+                
+                // İçeriği agresif temizle
+                let cleanContent = content.trim();
+                
+                // BOM ve özel karakterleri kaldır
+                if (cleanContent.charCodeAt(0) === 0xFEFF) {
+                    cleanContent = cleanContent.slice(1);
+                    addLog(`BOM karakteri kaldırıldı`, 'info');
+                }
+                
+                // İlk ve son karakterleri kontrol et
+                addLog(`İlk 100 karakter: ${cleanContent.substring(0, 100).replace(/\n/g, '\\n')}`, 'info');
+                
+                // JSON array başlangıcını bul
+                const arrayStart = cleanContent.indexOf('[');
+                const arrayEnd = cleanContent.lastIndexOf(']');
+                
+                if (arrayStart === -1 || arrayEnd === -1) {
+                    throw new Error('JSON array başlangıç/bitiş parantezleri bulunamadı');
+                }
+                
+                addLog(`JSON array pozisyonu: ${arrayStart} - ${arrayEnd}`, 'info');
+                cleanContent = cleanContent.substring(arrayStart, arrayEnd + 1);
+                
+                // Chunk'lara bölerek parse et (büyük dosya için)
+                addLog(`Büyük dosya için chunk parsing başlatılıyor...`, 'process');
+                const allQuestions = await parseJsonInChunks(cleanContent, targetCount);
                 
                 addLog(`Toplam ${allQuestions.length} soru bulundu, rastgele seçim yapılıyor`, 'info');
                 
@@ -401,6 +427,75 @@
                 addLog(`İçerik parse hatası: ${error.message}`, 'error');
                 throw error;
             }
+        }
+
+        // Büyük JSON'ı chunk'lara bölerek parse et
+        async function parseJsonInChunks(jsonContent, targetCount) {
+            addLog(`Chunk parsing başlatılıyor, hedef: ${targetCount} soru`, 'process');
+            
+            try {
+                // Önce küçük bir sample ile test et
+                const sampleSize = Math.min(1000000, jsonContent.length); // 1MB sample
+                const sample = jsonContent.substring(0, sampleSize) + ']';
+                
+                addLog(`Sample test yapılıyor (${(sampleSize / 1024).toFixed(0)} KB)...`, 'process');
+                
+                let sampleQuestions;
+                try {
+                    sampleQuestions = JSON.parse(sample);
+                } catch (sampleError) {
+                    addLog(`Sample parse hatası, regex ile obje arama yapılıyor...`, 'warning');
+                    return await extractQuestionsWithRegex(jsonContent, targetCount);
+                }
+                
+                if (sampleQuestions.length >= targetCount) {
+                    addLog(`Sample'da yeterli soru bulundu: ${sampleQuestions.length}`, 'success');
+                    return sampleQuestions.slice(0, targetCount * 2); // Biraz fazla al
+                }
+                
+                // Tam dosyayı parse etmeye çalış
+                addLog(`Tam dosya parse ediliyor...`, 'process');
+                return JSON.parse(jsonContent);
+                
+            } catch (error) {
+                addLog(`JSON parse başarısız, regex yöntemi deneniyor: ${error.message}`, 'warning');
+                return await extractQuestionsWithRegex(jsonContent, targetCount);
+            }
+        }
+
+        // Regex ile soru çıkarma (son çare)
+        async function extractQuestionsWithRegex(content, targetCount) {
+            addLog(`Regex ile soru çıkarma başlatılıyor...`, 'process');
+            
+            const questions = [];
+            const maxAttempts = targetCount * 10; // Daha fazla deneme
+            
+            // JSON objelerini bul
+            const objectRegex = /\{[^{}]*?"(?:question_title|question)"[^{}]*?"(?:best_answer|answer)"[^{}]*?\}/g;
+            let match;
+            let attempts = 0;
+            
+            while ((match = objectRegex.exec(content)) !== null && questions.length < targetCount && attempts < maxAttempts) {
+                attempts++;
+                
+                try {
+                    const obj = JSON.parse(match[0]);
+                    
+                    if ((obj.question_title || obj.question) && (obj.best_answer || obj.answer)) {
+                        questions.push(obj);
+                        
+                        if (questions.length % 10 === 0) {
+                            addLog(`Regex ile ${questions.length} soru bulundu...`, 'info');
+                        }
+                    }
+                } catch (parseError) {
+                    // Bu obje parse edilemedi, devam et
+                    continue;
+                }
+            }
+            
+            addLog(`Regex ile toplam ${questions.length} soru çıkarıldı`, 'success');
+            return questions;
         }
 
         async function processRawQuestions() {
@@ -428,16 +523,14 @@
                 // Sabit dosyadan oku
                 const targetCount = processCount === 'all' ? 1000 : parseInt(processCount); // 'all' için maksimum limit
                 
-                if (targetCount > 50) {
-                    // Çok fazla soru isteniyorsa streaming simülasyonu
-                    const allQuestions = await loadQuestionsFromFixedPath();
+                // Dosyadan oku ve seç
+                const allQuestions = await loadQuestionsFromFixedPath(targetCount);
+                
+                if (Array.isArray(allQuestions) && allQuestions.length > 0) {
                     rawQuestionsData = selectRandomQuestions(allQuestions, targetCount);
                     addLog(`${rawQuestionsData.length} soru rastgele seçildi`, 'success');
                 } else {
-                    // Az sayıda soru için direkt seçim
-                    const allQuestions = await loadQuestionsFromFixedPath();
-                    rawQuestionsData = selectRandomQuestions(allQuestions, targetCount);
-                    addLog(`${rawQuestionsData.length} soru rastgele seçildi`, 'success');
+                    throw new Error('Dosyadan geçerli soru verisi alınamadı');
                 }
 
                 addLog(`Toplam ${rawQuestionsData.length} soru işlenmeye hazır`, 'success');
