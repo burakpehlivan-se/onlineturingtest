@@ -48,7 +48,18 @@ export default async function handler(
   }
 
   try {
-    const { adminKey, action, questionId }: QuestionsRequest = req.body
+    // Handle both application/json and text/plain content types
+    let requestData: QuestionsRequest
+    
+    if (typeof req.body === 'string') {
+      // text/plain content type - parse JSON manually
+      requestData = JSON.parse(req.body)
+    } else {
+      // application/json content type
+      requestData = req.body
+    }
+    
+    const { adminKey, action, questionId } = requestData
     const clientIP = getClientIP(req)
 
     // Rate limiting (20 requests per hour per IP)

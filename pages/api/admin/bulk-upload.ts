@@ -46,7 +46,18 @@ export default async function handler(
   }
 
   try {
-    const { adminKey, questions }: BulkUploadRequest = req.body
+    // Handle both application/json and text/plain content types
+    let requestData: BulkUploadRequest
+    
+    if (typeof req.body === 'string') {
+      // text/plain content type - parse JSON manually
+      requestData = JSON.parse(req.body)
+    } else {
+      // application/json content type
+      requestData = req.body
+    }
+    
+    const { adminKey, questions } = requestData
     const clientIP = getClientIP(req)
 
     // Rate limiting (10 uploads per hour per IP - daha esnek)
