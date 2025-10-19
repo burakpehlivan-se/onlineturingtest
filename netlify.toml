@@ -16,3 +16,10 @@
 # Scheduled function for question processing
 [functions."api-cron-process-questions"]
   schedule = "0 */6 * * *"  # Her 6 saatte bir çalışır
+
+# Prevent trailing slash redirects for API routes
+[[redirects]]
+  from = "/api/*"
+  to = "/api/:splat"
+  status = 200
+  force = true

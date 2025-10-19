@@ -14,23 +14,35 @@ interface GameSession {
   createdAt: string
 }
 
+// Memory-based sessions for Netlify (serverless environment)
+let memoryStore: Record<string, GameSession> = {}
+
 export function loadSessions(): Record<string, GameSession> {
+  // Try file first, fallback to memory
   try {
     if (fs.existsSync(SESSIONS_FILE)) {
       const data = fs.readFileSync(SESSIONS_FILE, 'utf-8')
-      return JSON.parse(data)
+      const fileSessions = JSON.parse(data)
+      // Merge with memory store
+      memoryStore = { ...memoryStore, ...fileSessions }
+      return memoryStore
     }
   } catch (error) {
     logger.error('Session yükleme hatası', error)
   }
-  return {}
+  return memoryStore
 }
 
 export function saveSessions(sessions: Record<string, GameSession>): void {
+  // Always save to memory
+  memoryStore = sessions
+  
+  // Try to save to file (may fail on Netlify)
   try {
     fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2))
   } catch (error) {
-    logger.error('Session kaydetme hatası', error)
+    // Ignore file write errors on serverless
+    logger.log('File write failed, using memory store only')
   }
 }
 

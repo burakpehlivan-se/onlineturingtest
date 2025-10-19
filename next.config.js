@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   
   // Netlify deployment settings
-  trailingSlash: true,
+  trailingSlash: false,
   images: {
     unoptimized: true
   },
