@@ -351,46 +351,92 @@ export default function AdminPage() {
               <div className="p-6">
                 {activeTab === 'process' && (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="count" className="block text-sm font-medium text-gray-700">
-                          İşlenecek Soru Sayısı
-                        </label>
-                        <select
-                          id="count"
-                          value={count}
-                          onChange={(e) => setCount(parseInt(e.target.value))}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          {[1, 2, 3, 4, 5, 10].map(num => (
-                            <option key={num} value={num}>{num} soru</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex items-end">
-                        <button
-                          onClick={processQuestions}
-                          disabled={isProcessing}
-                          className={`w-full py-2 px-4 rounded-md text-white font-medium ${
-                            isProcessing 
-                              ? 'bg-gray-400 cursor-not-allowed' 
-                              : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500'
-                          }`}
-                        >
-                          {isProcessing ? 'İşleniyor...' : 'Soruları İşle'}
-                        </button>
+                    <div className="bg-blue-50 border border-blue-200 rounded-md p-6 text-center">
+                      <h3 className="text-lg font-medium text-blue-800 mb-2">
+                        🔒 Güvenli Soru Yönetimi
+                      </h3>
+                      <p className="text-blue-700 mb-4">
+                        Artık soru ekleme işlemlerini yerel bilgisayarınızdan yapabilirsiniz. 
+                        Bu daha güvenli ve hızlı bir yöntemdir.
+                      </p>
+                      <div className="space-y-3">
+                        <div className="bg-white rounded-md p-4 border border-blue-200">
+                          <h4 className="font-medium text-blue-800 mb-2">Yerel Admin Paneli</h4>
+                          <p className="text-sm text-blue-600 mb-3">
+                            Bilgisayarınızda <code>local-admin.html</code> dosyasını açın
+                          </p>
+                          <div className="text-xs text-blue-500 bg-blue-50 p-2 rounded">
+                            Dosya konumu: proje klasörü/local-admin.html
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white rounded-md p-4 border border-blue-200">
+                          <h4 className="font-medium text-blue-800 mb-2">Avantajları</h4>
+                          <ul className="text-sm text-blue-600 space-y-1">
+                            <li>✅ Daha güvenli (yerel bilgisayar)</li>
+                            <li>✅ Hızlı soru ekleme</li>
+                            <li>✅ Toplu yükleme özelliği</li>
+                            <li>✅ JSON export/import</li>
+                            <li>✅ Site şişmez</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="bg-gray-50 rounded-md p-4">
-                      <h3 className="text-lg font-medium text-gray-900 mb-3">Nasıl Çalışır?</h3>
-                      <div className="text-sm text-gray-600 space-y-2">
-                        <p><strong>1.</strong> filtrelenmis_soru_cevaplar.json'dan rastgele soru seçilir</p>
-                        <p><strong>2.</strong> OpenRouter API ile Türkçeye çevrilir</p>
-                        <p><strong>3.</strong> AI cevabı üretilir (forum kullanıcısı gibi)</p>
-                        <p><strong>4.</strong> Soru havuzuna eklenir</p>
+                    <details className="bg-gray-50 rounded-md p-4">
+                      <summary className="cursor-pointer font-medium text-gray-700">
+                        Acil Durum Soru İşleme (Genişletmek için tıklayın)
+                      </summary>
+                      
+                      <div className="mt-4 space-y-4">
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                          <p className="text-sm text-yellow-700">
+                            ⚠️ Sadece acil durumlarda kullanın. Yerel admin paneli tercih edilir.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label htmlFor="count" className="block text-sm font-medium text-gray-700">
+                              İşlenecek Soru Sayısı
+                            </label>
+                            <select
+                              id="count"
+                              value={count}
+                              onChange={(e) => setCount(parseInt(e.target.value))}
+                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              {[1, 2, 3].map(num => (
+                                <option key={num} value={num}>{num} soru</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex items-end">
+                            <button
+                              onClick={processQuestions}
+                              disabled={isProcessing}
+                              className={`w-full py-2 px-4 rounded-md text-white font-medium ${
+                                isProcessing 
+                                  ? 'bg-gray-400 cursor-not-allowed' 
+                                  : 'bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500'
+                              }`}
+                            >
+                              {isProcessing ? 'İşleniyor...' : 'Acil Soru İşle'}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-md p-4">
+                          <h3 className="text-lg font-medium text-gray-900 mb-3">Nasıl Çalışır?</h3>
+                          <div className="text-sm text-gray-600 space-y-2">
+                            <p><strong>1.</strong> demo-questions.json'dan rastgele soru seçilir</p>
+                            <p><strong>2.</strong> OpenRouter API ile Türkçeye çevrilir</p>
+                            <p><strong>3.</strong> AI cevabı üretilir (forum kullanıcısı gibi)</p>
+                            <p><strong>4.</strong> Soru havuzuna eklenir</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    </details>
                   </div>
                 )}
 

@@ -6,15 +6,95 @@ Yapay zekanın ürettiği cevapları insanın yazıp yazmadığını tahmin etti
 
 **İnsan Avcısı**, kullanıcıların bir soruya verilen iki cevabı (biri yapay zeka tarafından üretilmiş, diğeri internetten bulunan gerçek bir insan tarafından yazılmış) analiz ederek hangisinin yapay zekaya ait olduğunu tahmin etmeye çalıştığı, oyunlaştırılmış bir web platformudur.
 
-### Özellikler
+### Online Turing Test
 
-- 🧠 Yapay zeka ve insan yazısını ayırt etme oyunu
-- 🎯 3 zorluk seviyesi: Kolay, Orta, Zor
-- ❤️ Can sistemi (3 can ile başla)
-- 🏆 Puan sistemi (zorluk seviyesine göre değişen puanlar)
-- 📱 Mobil uyumlu tasarım
-- 🎨 Modern, koyu tema arayüz
-- 📤 Sosyal medyada skor paylaşma
+Bu proje, kullanıcıların AI ve insan cevaplarını ayırt etme yeteneklerini test eden bir oyundur.
+
+## Özellikler
+
+- 🎮 İnteraktif oyun deneyimi
+- 🤖 AI vs İnsan cevap karşılaştırması  
+- 📊 Puan sistemi ve can mekanizması
+- 🔒 Güvenli admin paneli
+- 📱 Responsive tasarım
+- 🏠 Yerel soru yönetimi sistemi
+
+## Kurulum
+
+1. Bağımlılıkları yükleyin:
+```bash
+npm install
+```
+
+2. Environment variables ayarlayın:
+```bash
+cp .env.example .env.local
+```
+
+3. Geliştirme sunucusunu başlatın:
+```bash
+npm run dev
+```
+
+## 🔒 Güvenli Soru Yönetimi
+
+### Yerel Admin Paneli (Önerilen)
+
+Soru ekleme işlemlerini güvenli bir şekilde yerel bilgisayarınızdan yapabilirsiniz:
+
+1. **`local-admin.html` dosyasını açın** (proje klasöründe)
+2. **Sorularınızı ekleyin** - AI ve İnsan cevapları ile birlikte
+3. **Toplu yükleme** - Birden fazla soruyu aynı anda ekleyin
+4. **JSON export/import** - Sorularınızı yedekleyin
+5. **Siteye gönder** - Hazır sorularınızı canlı siteye yükleyin
+
+### Avantajları:
+- ✅ **Güvenli**: Yerel bilgisayarınızda çalışır
+- ✅ **Hızlı**: Anında soru ekleme
+- ✅ **Pratik**: Toplu işlemler
+- ✅ **Temiz**: Site şişmez, JSON dosyalar büyümez
+- ✅ **Yedekleme**: Sorularınızı JSON olarak saklayın
+
+### Online Admin Paneli
+
+Acil durumlar için online admin paneli de mevcuttur:
+- Site URL: `https://your-site.netlify.app/admin-login`
+- Sadece acil durumlar için kullanın
+
+## Deployment
+
+Netlify'a deploy etmek için `DEPLOYMENT.md` dosyasına bakın.
+
+## API Endpoints
+
+- `POST /api/admin/bulk-upload` - Toplu soru yükleme
+- `GET /api/game/next-question` - Sonraki soru
+- `POST /api/game/submit` - Cevap gönderme
+- `POST /api/game/start` - Oyun başlatma
+
+## Güvenlik
+
+- Rate limiting (IP bazlı)
+- Admin key authentication
+- Session management
+- HTTPS zorunlu
+- XSS koruması
+
+## Lisans
+
+MIT License - Detaylar için `LICENSE` dosyasına bak.
+
+## 📝 Katkıda Bulunma
+
+Katkılar hoş karşılanır! Lütfen `CODE_OF_CONDUCT.md` dosyasını oku.
+
+## 📧 İletişim
+
+Sorularınız veya önerileriniz için bir issue açabilirsiniz.
+
+---
+
+**Yapay zeka ve insan yazısını ayırt edebilir misin?** 🧠
 
 ## 🚀 Başlangıç
 
