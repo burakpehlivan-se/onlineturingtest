@@ -9,6 +9,14 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Functions configuration
+[functions]
+  node_bundler = "esbuild"
+
+# Scheduled function for question processing
+[functions."api-cron-process-questions"]
+  schedule = "0 */6 * * *"  # Her 6 saatte bir çalışır
+
 # API rotaları için
 [[redirects]]
   from = "/api/*"
@@ -20,10 +28,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Scheduled function for question processing
-[[functions]]
-  node_bundler = "esbuild"
-
-[functions."api-cron-process-questions"]
-  schedule = "0 */6 * * *"  # Her 6 saatte bir çalışır
