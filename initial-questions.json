@@ -1,0 +1,52 @@
+[
+  {
+    "id": "demo_1",
+    "question": "Programlama öğrenmenin en iyi yolu nedir?",
+    "answerAI": "Programlama öğrenmek için önce temel kavramları anlamak gerekir. Sonra bol bol pratik yaparak deneyim kazanırsınız. Online kurslar ve kitaplar da çok faydalı oluyor.",
+    "answerHuman": "Bence direkt projelere dalıp öğrenmek en iyisi. Ben de öyle yaptım, hata yapa yapa öğrendim. Teori çok sıkıcı geliyor bana.",
+    "source": "Demo Question",
+    "originalQuestion": "What is the best way to learn programming?",
+    "originalAnswer": "Start with the basics, practice regularly, and build projects.",
+    "isTranslated": true
+  },
+  {
+    "id": "demo_2", 
+    "question": "Motivasyonu nasıl koruyabilirim öğrenirken?",
+    "answerAI": "Motivasyonu korumak için küçük hedefler belirleyin ve ilerlemenizi takip edin. Düzenli çalışma alışkanlığı edinin ve kendinizi ödüllendirin.",
+    "answerHuman": "Ya ben sürekli playlist açıp müzik dinleyerek çalışıyorum. Bir de arkadaşlarımla beraber çalışınca daha eğlenceli oluyor.",
+    "source": "Demo Question", 
+    "originalQuestion": "How do I stay motivated while learning?",
+    "originalAnswer": "Set small goals and celebrate progress.",
+    "isTranslated": true
+  },
+  {
+    "id": "demo_3",
+    "question": "Hangi programlama dilini öğrenmeliyim ilk olarak?",
+    "answerAI": "Yeni başlayanlar için Python ideal bir seçimdir. Sözdizimi basit ve anlaşılır olduğu için öğrenmesi kolaydır. Web geliştirme istiyorsanız JavaScript da iyi bir başlangıç olabilir.",
+    "answerHuman": "Python kesinlikle! Çok kolay ve her yerde kullanılıyor. Ben Java ile başlamıştım ama çok zordu, Python'a geçince her şey daha mantıklı geldi.",
+    "source": "Demo Question",
+    "originalQuestion": "What programming language should I learn first?", 
+    "originalAnswer": "Python is great for beginners because of its simple syntax.",
+    "isTranslated": true
+  },
+  {
+    "id": "demo_4",
+    "question": "Programcı olmak ne kadar sürer?",
+    "answerAI": "Programcı olmak için gereken süre kişiden kişiye değişir. Temel seviyede 3-6 ay, profesyonel seviyede 1-2 yıl düzenli çalışma gerekebilir.",
+    "answerHuman": "Bence 6 ay yoğun çalışırsan iş bulabilirsin. Ben 4 ayda bootcamp bitirip işe başladım. Tabii sürekli öğrenmeye devam etmek gerekiyor.",
+    "source": "Demo Question",
+    "originalQuestion": "How long does it take to become a programmer?",
+    "originalAnswer": "With consistent practice, you can learn basics in 3-6 months.",
+    "isTranslated": true
+  },
+  {
+    "id": "demo_5",
+    "question": "Programcı için en önemli beceriler nelerdir?",
+    "answerAI": "Problem çözme yeteneği, mantıksal düşünme, detaylara dikkat etme ve sürekli öğrenme isteği en önemli becerilerdir. İletişim becerileri de çok kritiktir.",
+    "answerHuman": "Google'da arama yapmayı öğren önce :D Şaka bir yana, sabırlı olmak çok önemli. Bir de takım çalışması, çünkü tek başına hiçbir şey yapamazsın.",
+    "source": "Demo Question", 
+    "originalQuestion": "What are the most important skills for a programmer?",
+    "originalAnswer": "Problem-solving, logical thinking, attention to detail.",
+    "isTranslated": true
+  }
+]

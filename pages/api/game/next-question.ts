@@ -51,22 +51,9 @@ export default async function handler(
     const questionPool = loadQuestionsPool()
 
     if (questionPool.length === 0) {
-      console.log(`\n⚠ SORU HAVUZU BOŞ - Demo soru gösteriliyor`)
-      const demoAnswerA = 'Yapay zeka, insan benzeri zeka gösterebilen bilgisayar sistemleridir. Makine öğrenmesi, derin öğrenme ve doğal dil işleme gibi teknolojileri kullanarak, veri analizi, görüntü tanıma ve karar verme gibi görevleri otomatik olarak gerçekleştirebilir.'
-      const demoAnswerB = 'Yapay zeka (AI) bilgisayarlar tarafından gerçekleştirilen zeka gösterimidir. İnsan zekasının bilgisayarlar tarafından taklit edilmesidir. Makine öğrenmesi ve derin öğrenme gibi teknikler kullanılarak, sistemler deneyimlerden öğrenebilir ve performansını iyileştirebilir.'
-      const demoCorrectAnswer = 'A'
-
-      return res.status(200).json({
-        question: {
-          id: 'demo_1',
-          question: 'Yapay zeka nedir?',
-          answerA: demoAnswerA,
-          answerB: demoAnswerB,
-          correctAnswer: demoCorrectAnswer as 'A' | 'B',
-        },
-        score: session.score,
-        lives: session.lives,
-        gameOver: false,
+      // Soru havuzu boş - bu durumda error döndür
+      return res.status(500).json({ 
+        error: 'No questions available. Please contact administrator.' 
       })
     }
 

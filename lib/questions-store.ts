@@ -25,6 +25,18 @@ export function loadQuestionsPool(): StoredQuestion[] {
       return parsed
     } else {
       logger.warn(`Soru havuzu dosyası bulunamadı: ${QUESTIONS_FILE}`)
+      
+      // İlk kez çalışıyorsa hazır soruları yükle
+      const initialQuestionsPath = path.join(process.cwd(), 'initial-questions.json')
+      if (fs.existsSync(initialQuestionsPath)) {
+        const initialData = fs.readFileSync(initialQuestionsPath, 'utf-8')
+        const initialQuestions = JSON.parse(initialData)
+        
+        // Hazır soruları soru havuzuna kaydet
+        saveQuestionsPool(initialQuestions)
+        logger.log(`✓ İlk soru havuzu oluşturuldu: ${initialQuestions.length} soru`)
+        return initialQuestions
+      }
     }
   } catch (error) {
     logger.error('Soru havuzu yükleme hatası', error)

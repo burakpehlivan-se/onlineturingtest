@@ -45,11 +45,27 @@ export default function Game() {
 
     try {
       const response = await fetch(`/api/game/next-question?sessionId=${sessionId}`)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      
       const data = await response.json()
+
+      if (data.error) {
+        setFeedback({ type: 'wrong', message: data.error })
+        return
+      }
 
       if (data.gameOver) {
         setGameState((prev) => ({ ...prev, gameOver: true }))
-      } else {
+      } else if (data.question) {
+        // Cevapları kontrol et
+        if (!data.question.answerA || !data.question.answerB) {
+          setFeedback({ type: 'wrong', message: 'Soru verileri eksik. Lütfen yöneticiye başvurun.' })
+          return
+        }
+        
         const directive = Math.random() > 0.5 ? 'Bunlardan hangisi AI yazımı?' : 'Bunlardan hangisi İnsan yazımı?'
         setGameState((prev) => ({
           ...prev,
@@ -60,9 +76,11 @@ export default function Game() {
           score: data.score,
           lives: data.lives,
         }))
+      } else {
+        setFeedback({ type: 'wrong', message: 'Soru verisi alınamadı' })
       }
     } catch (error) {
-      setFeedback({ type: 'wrong', message: 'Soru yüklenemedi' })
+      setFeedback({ type: 'wrong', message: 'Soru yüklenemedi. Lütfen sayfayı yenileyin.' })
     } finally {
       setLoading(false)
     }
