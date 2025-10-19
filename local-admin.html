@@ -30,16 +30,21 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">filtrelenmis_soru_cevaplar.json Dosyası</label>
-                        <input type="file" id="rawQuestionsFile" accept=".json" 
-                               class="w-full border border-gray-300 rounded-md px-3 py-2"
-                               onchange="previewFile()">
-                        <p class="text-sm text-gray-500 mt-1">Büyük soru havuzu dosyanızı seçin (filtrelenmis_soru_cevaplar.json)</p>
-                        
-                        <!-- Dosya Önizleme -->
-                        <div id="filePreview" class="hidden mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                            <h4 class="font-medium text-gray-700 mb-2">Dosya Önizleme:</h4>
-                            <div id="previewContent" class="text-sm text-gray-600"></div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Soru Kaynağı</label>
+                        <div class="bg-gray-50 border border-gray-200 rounded-md p-3">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="text-sm font-medium text-gray-900">Otomatik Dosya Okuma</h4>
+                                    <p class="text-sm text-gray-600">
+                                        <code class="bg-gray-100 px-1 rounded text-xs">filtrelenmis_soru_cevaplar.json</code> dosyasından otomatik okuma
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -56,7 +61,7 @@
 
                     <button onclick="processRawQuestions()" id="processBtn" 
                             class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
-                        🔄 Soruları İşle (Çevir + AI Cevap)
+                        🚀 Soruları İşle (Otomatik)
                     </button>
 
                     <div id="processProgress" class="hidden">
@@ -331,83 +336,79 @@
         // Ham soruları işleme pipeline'ı
         let rawQuestionsData = [];
 
-        // Dosya önizleme fonksiyonu
-        async function previewFile() {
-            const fileInput = document.getElementById('rawQuestionsFile');
-            const filePreview = document.getElementById('filePreview');
-            const previewContent = document.getElementById('previewContent');
+        // Sabit dosya yolundan okuma fonksiyonu
+        async function loadQuestionsFromFixedPath() {
+            const filePath = '/home/burki/Code/onlineTuringTest/filtrelenmis_soru_cevaplar.json';
             
-            if (!fileInput.files[0]) {
-                filePreview.classList.add('hidden');
-                return;
-            }
-
             try {
-                const file = fileInput.files[0];
-                const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+                addLog(`Sabit dosya yolundan okuma başlatılıyor: ${filePath}`, 'info');
                 
-                let previewText = `📁 <strong>${file.name}</strong><br>`;
-                previewText += `📊 Boyut: ${fileSize} MB<br>`;
+                // Fetch ile dosyayı oku
+                const response = await fetch(`http://localhost:8080/filtrelenmis_soru_cevaplar.json`);
                 
-                // Büyük dosya kontrolü
-                if (file.size > 10 * 1024 * 1024) {
-                    previewText += `🔥 <span style="color: orange;">Büyük dosya tespit edildi!</span><br>`;
-                    previewText += `⚡ Streaming okuma modu kullanılacak<br>`;
-                    
-                    // Sadece ilk 1000 karakteri oku
-                    const chunk = await readFileChunk(file, 0, 1000);
-                    previewText += `📝 İçerik önizleme (ilk 1000 karakter):<br>`;
-                    previewText += `<code style="background: #f3f4f6; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; font-size: 12px; overflow-x: auto;">${chunk.replace(/</g, '&lt;').replace(/>/g, '&gt;')}...</code>`;
-                    
-                    // Basit format kontrolü
-                    if (chunk.includes('"question_title"') || chunk.includes('"question"')) {
-                        previewText += `<br>✅ <span style="color: green;">Soru formatı tespit edildi</span><br>`;
-                        previewText += `🎲 Rastgele soru seçimi yapılacak`;
-                    } else {
-                        previewText += `<br>⚠️ <span style="color: orange;">Soru formatı belirsiz</span>`;
-                    }
-                    
-                } else {
-                    // Normal dosya işleme
-                    let content = await readFileAsText(file);
-                    
-                    // İlk 500 karakteri göster
-                    const preview = content.substring(0, 500);
-                    previewText += `📝 İçerik önizleme:<br>`;
-                    previewText += `<code style="background: #f3f4f6; padding: 8px; display: block; margin-top: 8px; border-radius: 4px; font-size: 12px; overflow-x: auto;">${preview.replace(/</g, '&lt;').replace(/>/g, '&gt;')}${content.length > 500 ? '...' : ''}</code>`;
-                    
-                    // JSON formatı kontrol et
-                    try {
-                        content = cleanJsonContent(content);
-                        const testData = JSON.parse(content);
-                        previewText += `<br>✅ <span style="color: green;">JSON formatı geçerli</span><br>`;
-                        previewText += `📊 Toplam ${Array.isArray(testData) ? testData.length : 'bilinmeyen'} öğe`;
-                    } catch (e) {
-                        previewText += `<br>❌ <span style="color: red;">JSON format hatası: ${e.message}</span>`;
-                    }
+                if (!response.ok) {
+                    throw new Error(`Dosya bulunamadı: ${response.status} ${response.statusText}`);
                 }
                 
-                previewContent.innerHTML = previewText;
-                filePreview.classList.remove('hidden');
+                const fileContent = await response.text();
+                const fileSize = (fileContent.length / 1024 / 1024).toFixed(2);
+                
+                addLog(`Dosya başarıyla okundu: ${fileSize} MB`, 'success');
+                
+                // Büyük dosya kontrolü
+                if (fileContent.length > 10 * 1024 * 1024) {
+                    addLog(`Büyük dosya tespit edildi, streaming okuma gerekli`, 'warning');
+                    // Büyük dosya için streaming simülasyonu
+                    return await simulateStreamingFromContent(fileContent);
+                } else {
+                    addLog(`Normal boyut dosya, tam parse yapılıyor`, 'info');
+                    const cleanContent = cleanJsonContent(fileContent);
+                    const allQuestions = JSON.parse(cleanContent);
+                    addLog(`Toplam ${allQuestions.length} soru bulundu`, 'success');
+                    return allQuestions;
+                }
                 
             } catch (error) {
-                previewContent.innerHTML = `❌ Dosya okunamadı: ${error.message}`;
-                filePreview.classList.remove('hidden');
+                addLog(`Dosya okuma hatası: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Büyük içerikten streaming simülasyonu
+        async function simulateStreamingFromContent(content, targetCount) {
+            addLog(`Büyük içerikten ${targetCount} soru seçiliyor...`, 'process');
+            
+            try {
+                // İçeriği temizle ve parse et
+                const cleanContent = cleanJsonContent(content);
+                const allQuestions = JSON.parse(cleanContent);
+                
+                addLog(`Toplam ${allQuestions.length} soru bulundu, rastgele seçim yapılıyor`, 'info');
+                
+                // Rastgele seçim yap
+                const selectedQuestions = selectRandomQuestions(allQuestions, targetCount);
+                
+                // Seçilen soruları logla
+                for (let i = 0; i < selectedQuestions.length; i++) {
+                    const question = selectedQuestions[i];
+                    const questionText = (question.question_title || question.question || '').substring(0, 50);
+                    addLog(`Soru ${i + 1}/${selectedQuestions.length} seçildi: "${questionText}..."`, 'success');
+                }
+                
+                return selectedQuestions;
+                
+            } catch (error) {
+                addLog(`İçerik parse hatası: ${error.message}`, 'error');
+                throw error;
             }
         }
 
         async function processRawQuestions() {
             const apiKey = document.getElementById('apiKey').value;
-            const fileInput = document.getElementById('rawQuestionsFile');
             const processCount = document.getElementById('processCount').value;
 
             if (!apiKey) {
                 alert('OpenRouter API Key gerekli!');
-                return;
-            }
-
-            if (!fileInput.files[0]) {
-                alert('Lütfen bir JSON dosyası seçin!');
                 return;
             }
 
@@ -421,30 +422,21 @@
             processProgress.classList.remove('hidden');
 
             try {
-                const file = fileInput.files[0];
-                const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+                addLog(`Otomatik soru işleme başlatılıyor...`, 'info');
+                processStatus.textContent = 'Sabit dosyadan sorular okunuyor...';
                 
-                addLog(`Dosya yüklendi: ${file.name} (${fileSize} MB)`, 'info');
+                // Sabit dosyadan oku
+                const targetCount = processCount === 'all' ? 1000 : parseInt(processCount); // 'all' için maksimum limit
                 
-                // Büyük dosya kontrolü (10MB üzeri)
-                if (file.size > 10 * 1024 * 1024) {
-                    addLog(`Büyük dosya tespit edildi, streaming okuma modu aktif`, 'warning');
-                    processStatus.textContent = 'Büyük dosyadan rastgele sorular seçiliyor...';
-                    
-                    // Streaming ile rastgele soru seç
-                    rawQuestionsData = await extractRandomQuestionsFromLargeFile(file, parseInt(processCount) || 5);
+                if (targetCount > 50) {
+                    // Çok fazla soru isteniyorsa streaming simülasyonu
+                    const allQuestions = await loadQuestionsFromFixedPath();
+                    rawQuestionsData = selectRandomQuestions(allQuestions, targetCount);
+                    addLog(`${rawQuestionsData.length} soru rastgele seçildi`, 'success');
                 } else {
-                    addLog(`Normal boyut dosya, tam okuma yapılıyor`, 'info');
-                    processStatus.textContent = 'Dosya okunuyor...';
-                    
-                    // Normal okuma
-                    let fileContent = await readFileAsText(file);
-                    fileContent = cleanJsonContent(fileContent);
-                    rawQuestionsData = JSON.parse(fileContent);
-                    
-                    // Rastgele seç
-                    const totalToProcess = processCount === 'all' ? rawQuestionsData.length : parseInt(processCount);
-                    rawQuestionsData = selectRandomQuestions(rawQuestionsData, totalToProcess);
+                    // Az sayıda soru için direkt seçim
+                    const allQuestions = await loadQuestionsFromFixedPath();
+                    rawQuestionsData = selectRandomQuestions(allQuestions, targetCount);
                     addLog(`${rawQuestionsData.length} soru rastgele seçildi`, 'success');
                 }
 
@@ -499,7 +491,7 @@
                 alert(errorMessage);
             } finally {
                 processBtn.disabled = false;
-                processBtn.textContent = '🔄 Soruları İşle (Çevir + AI Cevap)';
+                processBtn.textContent = '🚀 Soruları İşle (Otomatik)';
                 processProgress.classList.add('hidden');
                 progressBar.style.width = '0%';
             }
@@ -671,114 +663,7 @@ Soru: ${turkishQuestion}`;
             return selected;
         }
 
-        // Büyük dosyalardan streaming ile rastgele soru çıkarma
-        async function extractRandomQuestionsFromLargeFile(file, targetCount) {
-            const chunkSize = 1024 * 1024; // 1MB chunks
-            const maxAttempts = targetCount * 3; // Her soru için 3 deneme
-            const foundQuestions = [];
-            
-            addLog(`${targetCount} soru için büyük dosyada streaming arama başlatılıyor...`, 'process');
-            addLog(`Chunk boyutu: 1MB, Maksimum deneme: ${maxAttempts}`, 'info');
-            
-            for (let attempt = 0; attempt < maxAttempts && foundQuestions.length < targetCount; attempt++) {
-                try {
-                    // Rastgele pozisyon seç
-                    const randomPosition = Math.floor(Math.random() * (file.size - chunkSize));
-                    const positionMB = (randomPosition / 1024 / 1024).toFixed(1);
-                    
-                    addLog(`Deneme ${attempt + 1}/${maxAttempts}: ${positionMB}MB pozisyonundan okuma`, 'process');
-                    
-                    // Chunk oku
-                    const chunk = await readFileChunk(file, randomPosition, chunkSize);
-                    
-                    // JSON objelerini bul
-                    const questions = extractQuestionsFromChunk(chunk);
-                    
-                    if (questions.length > 0) {
-                        addLog(`Bu chunk'ta ${questions.length} soru bulundu`, 'info');
-                    }
-                    
-                    // Bulunan soruları ekle (tekrar etmeyecek şekilde)
-                    for (const question of questions) {
-                        if (foundQuestions.length >= targetCount) break;
-                        
-                        // Aynı soru var mı kontrol et
-                        const isDuplicate = foundQuestions.some(q => 
-                            q.question_title === question.question_title || 
-                            q.question === question.question
-                        );
-                        
-                        if (!isDuplicate) {
-                            foundQuestions.push(question);
-                            const questionText = (question.question_title || question.question || '').substring(0, 50);
-                            addLog(`Soru ${foundQuestions.length}/${targetCount} seçildi: "${questionText}..."`, 'success');
-                        }
-                    }
-                    
-                } catch (error) {
-                    addLog(`Chunk okuma hatası (deneme ${attempt + 1}): ${error.message}`, 'warning');
-                }
-            }
-            
-            addLog(`Streaming tamamlandı: ${foundQuestions.length} benzersiz soru bulundu`, 'success');
-            return foundQuestions;
-        }
-
-        // Dosya chunk okuma
-        function readFileChunk(file, start, length) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = e => resolve(e.target.result);
-                reader.onerror = reject;
-                
-                const blob = file.slice(start, start + length);
-                reader.readAsText(blob);
-            });
-        }
-
-        // Chunk'tan JSON objelerini çıkar
-        function extractQuestionsFromChunk(chunk) {
-            const questions = [];
-            
-            try {
-                // JSON objelerini bul (basit regex ile)
-                const jsonObjectRegex = /\{[^{}]*"(?:question_title|question)"[^{}]*"(?:best_answer|answer)"[^{}]*\}/g;
-                const matches = chunk.match(jsonObjectRegex);
-                
-                if (matches) {
-                    for (const match of matches) {
-                        try {
-                            // Eksik parantezleri tamamlamaya çalış
-                            let cleanMatch = match;
-                            
-                            // Başlangıç ve bitiş parantezlerini kontrol et
-                            const openBraces = (cleanMatch.match(/\{/g) || []).length;
-                            const closeBraces = (cleanMatch.match(/\}/g) || []).length;
-                            
-                            if (openBraces > closeBraces) {
-                                cleanMatch += '}';
-                            }
-                            
-                            const questionObj = JSON.parse(cleanMatch);
-                            
-                            // Gerekli alanları kontrol et
-                            if ((questionObj.question_title || questionObj.question) && 
-                                (questionObj.best_answer || questionObj.answer)) {
-                                questions.push(questionObj);
-                            }
-                            
-                        } catch (parseError) {
-                            // Bu chunk parse edilemedi, devam et
-                            continue;
-                        }
-                    }
-                }
-            } catch (error) {
-                console.warn('Chunk parse hatası:', error.message);
-            }
-            
-            return questions;
-        }
+        // Not: Eski streaming fonksiyonları kaldırıldı, artık sabit dosya yolu kullanılıyor
 
         async function deployQuestions() {
             if (questions.length === 0) {
