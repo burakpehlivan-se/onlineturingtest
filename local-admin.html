@@ -12,61 +12,115 @@
             🔒 Yerel Soru Yönetimi Paneli
         </h1>
 
-        <!-- Soru Ekleme Formu -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4">Yeni Soru Ekle</h2>
-            <form id="questionForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Soru</label>
-                    <textarea id="question" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2" 
-                              placeholder="Soruyu buraya yazın..." required></textarea>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Soru Ekleme Yöntemleri -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            
+            <!-- Manuel Soru Ekleme -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    ✏️ Manuel Soru Ekleme
+                </h2>
+                <form id="questionForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Soru</label>
+                        <textarea id="question" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2" 
+                                  placeholder="Soruyu buraya yazın..." required></textarea>
+                    </div>
+                    
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">AI Cevabı</label>
-                        <textarea id="answerAI" rows="4" class="w-full border border-gray-300 rounded-md px-3 py-2" 
+                        <textarea id="answerAI" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2" 
                                   placeholder="AI'ın vereceği cevap..." required></textarea>
                     </div>
+                    
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">İnsan Cevabı</label>
-                        <textarea id="answerHuman" rows="4" class="w-full border border-gray-300 rounded-md px-3 py-2" 
+                        <textarea id="answerHuman" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2" 
                                   placeholder="İnsanın vereceği cevap..." required></textarea>
                     </div>
-                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Kaynak (Opsiyonel)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Kaynak</label>
                         <input type="text" id="source" class="w-full border border-gray-300 rounded-md px-3 py-2" 
-                               placeholder="Örn: Manuel Ekleme, Reddit, vb.">
+                               placeholder="Örn: Manuel Ekleme" value="Manuel Ekleme">
                     </div>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                        Manuel Soru Ekle
+                    </button>
+                </form>
+            </div>
+
+            <!-- Soru İşleme Pipeline -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    🔄 Soru İşleme Pipeline
+                </h2>
+                
+                <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Orijinal Soru (Opsiyonel)</label>
-                        <input type="text" id="originalQuestion" class="w-full border border-gray-300 rounded-md px-3 py-2" 
-                               placeholder="İngilizce orijinal soru">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">OpenRouter API Key</label>
+                        <input type="password" id="apiKey" class="w-full border border-gray-300 rounded-md px-3 py-2" 
+                               placeholder="sk-or-v1-..." value="">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ham Soru Dosyası Yükle</label>
+                        <input type="file" id="rawQuestionsFile" accept=".json" 
+                               class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <p class="text-sm text-gray-500 mt-1">demo-questions.json veya filtrelenmis_soru_cevaplar.json</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">İşlenecek Soru Sayısı</label>
+                        <select id="processCount" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="1">1 soru</option>
+                            <option value="3">3 soru</option>
+                            <option value="5">5 soru</option>
+                            <option value="10">10 soru</option>
+                            <option value="all">Tüm sorular</option>
+                        </select>
+                    </div>
+
+                    <button onclick="processRawQuestions()" id="processBtn" 
+                            class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                        🔄 Soruları İşle (Çevir + AI Cevap)
+                    </button>
+
+                    <div id="processProgress" class="hidden">
+                        <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
+                            <div class="flex items-center">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                                <span class="text-blue-700 text-sm" id="processStatus">Sorular işleniyor...</span>
+                            </div>
+                            <div class="mt-2 bg-gray-200 rounded-full h-2">
+                                <div id="progressBar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
-                    Soru Ekle
-                </button>
-            </form>
+            </div>
         </div>
 
         <!-- Mevcut Sorular -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-semibold">Mevcut Sorular</h2>
-                <div class="space-x-2">
+                <div class="flex flex-wrap gap-2">
                     <button onclick="loadQuestions()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
-                        Yenile
+                        🔄 Yenile
                     </button>
                     <button onclick="exportQuestions()" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700">
-                        JSON İndir
+                        📥 JSON İndir
+                    </button>
+                    <button onclick="importQuestions()" class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700">
+                        📤 JSON Yükle
+                    </button>
+                    <button onclick="clearAllQuestions()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+                        🗑️ Hepsini Sil
                     </button>
                     <button onclick="deployQuestions()" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
-                        Siteye Gönder
+                        🚀 Siteye Gönder
                     </button>
                 </div>
             </div>
@@ -184,6 +238,268 @@
             link.href = URL.createObjectURL(dataBlob);
             link.download = `turing-test-questions-${new Date().toISOString().split('T')[0]}.json`;
             link.click();
+        }
+
+        function importQuestions() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedQuestions = JSON.parse(e.target.result);
+                        
+                        if (!Array.isArray(importedQuestions)) {
+                            alert('Geçersiz JSON formatı!');
+                            return;
+                        }
+
+                        // Mevcut sorularla birleştir
+                        questions = [...questions, ...importedQuestions];
+                        saveToLocalStorage();
+                        displayQuestions();
+                        
+                        alert(`✅ ${importedQuestions.length} soru başarıyla yüklendi! Toplam: ${questions.length}`);
+                    } catch (error) {
+                        alert('JSON parse hatası: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        function clearAllQuestions() {
+            if (questions.length === 0) {
+                alert('Zaten soru yok!');
+                return;
+            }
+
+            if (confirm(`${questions.length} soruyu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!`)) {
+                questions = [];
+                saveToLocalStorage();
+                displayQuestions();
+                alert('✅ Tüm sorular silindi!');
+            }
+        }
+
+        // API Key'i localStorage'a kaydet
+        function saveApiKey() {
+            const apiKey = document.getElementById('apiKey').value;
+            if (apiKey) {
+                localStorage.setItem('openrouter_api_key', apiKey);
+            }
+        }
+
+        function loadApiKey() {
+            const savedKey = localStorage.getItem('openrouter_api_key');
+            if (savedKey) {
+                document.getElementById('apiKey').value = savedKey;
+            }
+        }
+
+        // API key otomatik kaydetme
+        document.addEventListener('DOMContentLoaded', function() {
+            loadQuestions();
+            loadApiKey();
+            
+            // API key değiştiğinde otomatik kaydet
+            document.getElementById('apiKey').addEventListener('change', saveApiKey);
+        });
+
+        // Ham soruları işleme pipeline'ı
+        let rawQuestionsData = [];
+
+        async function processRawQuestions() {
+            const apiKey = document.getElementById('apiKey').value;
+            const fileInput = document.getElementById('rawQuestionsFile');
+            const processCount = document.getElementById('processCount').value;
+
+            if (!apiKey) {
+                alert('OpenRouter API Key gerekli!');
+                return;
+            }
+
+            if (!fileInput.files[0]) {
+                alert('Lütfen bir JSON dosyası seçin!');
+                return;
+            }
+
+            const processBtn = document.getElementById('processBtn');
+            const processProgress = document.getElementById('processProgress');
+            const processStatus = document.getElementById('processStatus');
+            const progressBar = document.getElementById('progressBar');
+            
+            processBtn.disabled = true;
+            processBtn.textContent = 'İşleniyor...';
+            processProgress.classList.remove('hidden');
+
+            try {
+                // Dosyayı oku
+                const file = fileInput.files[0];
+                const fileContent = await readFileAsText(file);
+                rawQuestionsData = JSON.parse(fileContent);
+
+                console.log(`📁 ${rawQuestionsData.length} ham soru yüklendi`);
+
+                // İşlenecek soru sayısını belirle
+                const totalToProcess = processCount === 'all' ? rawQuestionsData.length : parseInt(processCount);
+                const questionsToProcess = rawQuestionsData.slice(0, totalToProcess);
+
+                processStatus.textContent = `${questionsToProcess.length} soru işleniyor...`;
+
+                // Her soruyu işle
+                for (let i = 0; i < questionsToProcess.length; i++) {
+                    const rawQuestion = questionsToProcess[i];
+                    
+                    processStatus.textContent = `Soru ${i + 1}/${questionsToProcess.length} işleniyor...`;
+                    progressBar.style.width = `${((i + 1) / questionsToProcess.length) * 100}%`;
+
+                    await processSingleRawQuestion(apiKey, rawQuestion, i + 1, questionsToProcess.length);
+                    
+                    // Rate limiting
+                    if (i < questionsToProcess.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    }
+                }
+                
+                alert(`✅ ${questionsToProcess.length} soru başarıyla işlendi ve eklendi!`);
+                displayQuestions();
+                
+            } catch (error) {
+                alert('Soru işleme hatası: ' + error.message);
+                console.error('Processing error:', error);
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = '🔄 Soruları İşle (Çevir + AI Cevap)';
+                processProgress.classList.add('hidden');
+                progressBar.style.width = '0%';
+            }
+        }
+
+        async function processSingleRawQuestion(apiKey, rawQuestion, current, total) {
+            try {
+                // Ham sorudan bilgileri çıkar
+                const originalQuestion = rawQuestion.question_title || rawQuestion.question || '';
+                const originalAnswer = rawQuestion.best_answer || rawQuestion.answer || '';
+
+                if (!originalQuestion || !originalAnswer) {
+                    console.warn(`⚠️ Soru ${current}: Eksik veri, atlanıyor`);
+                    return;
+                }
+
+                // Çeviri yap
+                const translationResult = await translateQuestionAndAnswer(apiKey, originalQuestion, originalAnswer);
+                
+                // AI cevabı üret
+                const aiAnswer = await generateAIAnswer(apiKey, translationResult.question);
+
+                // İşlenmiş soruyu oluştur
+                const processedQuestion = {
+                    id: `processed_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+                    question: translationResult.question,
+                    answerAI: aiAnswer,
+                    answerHuman: translationResult.answer,
+                    source: rawQuestion.source || 'Processed Question',
+                    originalQuestion: originalQuestion,
+                    originalAnswer: originalAnswer,
+                    isTranslated: true
+                };
+
+                questions.push(processedQuestion);
+                saveToLocalStorage();
+                
+                console.log(`✅ Soru ${current}/${total} işlendi:`, processedQuestion.question.substring(0, 50) + '...');
+
+            } catch (error) {
+                console.error(`❌ Soru ${current} işlenirken hata:`, error);
+            }
+        }
+
+        async function translateQuestionAndAnswer(apiKey, originalQuestion, originalAnswer) {
+            const prompt = `Lütfen aşağıdaki İngilizce metinleri Türkçeye çevir:
+
+Soru: ${originalQuestion}
+Cevap: ${originalAnswer}
+
+Çeviri kuralları:
+- Doğal ve akıcı Türkçe kullan
+- Teknik terimleri uygun şekilde çevir
+- Anlamı koruyarak çevir
+
+Format:
+SORU: [Türkçe soru]
+CEVAP: [Türkçe cevap]`;
+
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'anthropic/claude-3-haiku',
+                    messages: [{ role: 'user', content: prompt }],
+                    max_tokens: 1000
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Translation API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const content = data.choices[0].message.content;
+
+            // Parse çeviri sonucu
+            const questionMatch = content.match(/SORU:\s*(.+?)(?=CEVAP:|$)/s);
+            const answerMatch = content.match(/CEVAP:\s*(.+?)$/s);
+
+            return {
+                question: questionMatch ? questionMatch[1].trim() : originalQuestion,
+                answer: answerMatch ? answerMatch[1].trim() : originalAnswer
+            };
+        }
+
+        async function generateAIAnswer(apiKey, turkishQuestion) {
+            const prompt = `Sen bir internet forumunda soruya cevap veren sıradan bir kullanıcısın. Bir yapay zeka olduğunu ASLA belli etme. Resmi, ansiklopedik veya çok detaylı cevaplar verme. Kısa (yaklaşık 4-5 cümle), samimi ve kişisel bir tonda cevap ver. "Bir dil modeli olarak..." gibi ifadeler KESİNLİKLE kullanma. Sadece sorulan soruya odaklan ve cevabını ver.
+
+Soru: ${turkishQuestion}`;
+
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'anthropic/claude-3-haiku',
+                    messages: [{ role: 'user', content: prompt }],
+                    max_tokens: 300
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`AI answer API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0].message.content.trim();
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
         }
 
         async function deployQuestions() {
