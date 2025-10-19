@@ -37,5 +37,5 @@ filtrelenmis_soru_cevaplar.json
 .vscode/
 .idea/
 
-# Local admin panel (private tool)
-local-admin.html
+# Local admin panel (private tool) - temporarily removed for CORS fix
+# local-admin.html
