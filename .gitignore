@@ -36,3 +36,6 @@ filtrelenmis_soru_cevaplar.json
 # IDE files
 .vscode/
 .idea/
+
+# Local admin panel (private tool)
+local-admin.html
