@@ -2,7 +2,10 @@ import fs from 'fs'
 import path from 'path'
 import { logger } from './production-logger'
 
-const QUESTIONS_FILE = path.join(process.cwd(), '.questions-pool.json')
+// Netlify Functions için /tmp dizini kullan (yazılabilir)
+const QUESTIONS_FILE = process.env.NETLIFY 
+  ? '/tmp/.questions-pool.json' 
+  : path.join(process.cwd(), '.questions-pool.json')
 
 interface StoredQuestion {
   id: string
@@ -39,9 +42,22 @@ export function loadQuestionsPool(): StoredQuestion[] {
 
 export function saveQuestionsPool(questions: StoredQuestion[]): void {
   try {
+    console.log(`🔍 Questions Store - Saving to: ${QUESTIONS_FILE}`)
+    console.log(`🔍 Questions Store - Saving ${questions.length} questions`)
+    
     fs.writeFileSync(QUESTIONS_FILE, JSON.stringify(questions, null, 2))
-    logger.log(`✓ Soru havuzu kaydedildi: ${questions.length} soru -> ${QUESTIONS_FILE}`)
+    
+    // Verify write was successful
+    if (fs.existsSync(QUESTIONS_FILE)) {
+      const fileSize = fs.statSync(QUESTIONS_FILE).size
+      console.log(`✅ Questions Store - File written successfully, size: ${fileSize} bytes`)
+    } else {
+      console.error(`❌ Questions Store - File not found after write!`)
+    }
+    
+    logger.log(`✓ Soru havuzu kaydedildi: ${questions.length} soru`)
   } catch (error) {
+    console.error('❌ Questions Store - Save error:', error)
     logger.error('Soru havuzu kaydetme hatası', error)
   }
 }
