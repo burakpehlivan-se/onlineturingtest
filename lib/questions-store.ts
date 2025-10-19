@@ -66,3 +66,36 @@ export function addQuestionsToPool(newQuestions: StoredQuestion[]): StoredQuesti
   saveQuestionsPool(merged)
   return merged
 }
+
+export function getQuestionsPool(): StoredQuestion[] {
+  return loadQuestionsPool()
+}
+
+export function clearQuestionsPool(): void {
+  try {
+    saveQuestionsPool([])
+    logger.log('✓ Soru havuzu temizlendi')
+  } catch (error) {
+    logger.error('Soru havuzu temizleme hatası', error)
+  }
+}
+
+export function deleteQuestionFromPool(questionId: string): boolean {
+  try {
+    const questions = loadQuestionsPool()
+    const initialCount = questions.length
+    const filtered = questions.filter(q => q.id !== questionId)
+    
+    if (filtered.length < initialCount) {
+      saveQuestionsPool(filtered)
+      logger.log(`✓ Soru silindi: ${questionId}`)
+      return true
+    } else {
+      logger.warn(`Soru bulunamadı: ${questionId}`)
+      return false
+    }
+  } catch (error) {
+    logger.error('Soru silme hatası', error)
+    return false
+  }
+}
