@@ -27,6 +27,11 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">OpenRouter API Key</label>
                         <input type="password" id="apiKey" class="w-full border border-gray-300 rounded-md px-3 py-2" 
                                placeholder="sk-or-v1-..." value="">
+                        <p class="text-xs text-gray-500 mt-1">
+                            <a href="https://openrouter.ai/keys" target="_blank" class="text-blue-600 hover:underline">
+                                OpenRouter'dan API key alın
+                            </a> - 401 hatası alıyorsanız key'inizi kontrol edin
+                        </p>
                     </div>
                     
                     <div>
@@ -394,16 +399,29 @@
                 // İlk ve son karakterleri kontrol et
                 addLog(`İlk 100 karakter: ${cleanContent.substring(0, 100).replace(/\n/g, '\\n')}`, 'info');
                 
-                // JSON array başlangıcını bul
-                const arrayStart = cleanContent.indexOf('[');
-                const arrayEnd = cleanContent.lastIndexOf(']');
+                // Format kontrolü: JSON Array mı yoksa JSONL (JSON Lines) mı?
+                const isJsonArray = cleanContent.trim().startsWith('[');
+                const isJsonLines = cleanContent.trim().startsWith('{');
                 
-                if (arrayStart === -1 || arrayEnd === -1) {
-                    throw new Error('JSON array başlangıç/bitiş parantezleri bulunamadı');
+                if (isJsonLines) {
+                    addLog(`JSONL (JSON Lines) formatı tespit edildi`, 'info');
+                    // JSONL formatını JSON array'e çevir
+                    return await parseJsonLines(cleanContent, targetCount);
+                } else if (isJsonArray) {
+                    addLog(`JSON Array formatı tespit edildi`, 'info');
+                    // JSON array başlangıcını bul
+                    const arrayStart = cleanContent.indexOf('[');
+                    const arrayEnd = cleanContent.lastIndexOf(']');
+                    
+                    if (arrayStart === -1 || arrayEnd === -1) {
+                        throw new Error('JSON array başlangıç/bitiş parantezleri bulunamadı');
+                    }
+                    
+                    addLog(`JSON array pozisyonu: ${arrayStart} - ${arrayEnd}`, 'info');
+                    cleanContent = cleanContent.substring(arrayStart, arrayEnd + 1);
+                } else {
+                    throw new Error('Bilinmeyen JSON formatı');
                 }
-                
-                addLog(`JSON array pozisyonu: ${arrayStart} - ${arrayEnd}`, 'info');
-                cleanContent = cleanContent.substring(arrayStart, arrayEnd + 1);
                 
                 // Chunk'lara bölerek parse et (büyük dosya için)
                 addLog(`Büyük dosya için chunk parsing başlatılıyor...`, 'process');
@@ -461,6 +479,53 @@
                 addLog(`JSON parse başarısız, regex yöntemi deneniyor: ${error.message}`, 'warning');
                 return await extractQuestionsWithRegex(jsonContent, targetCount);
             }
+        }
+
+        // JSONL (JSON Lines) formatını parse et
+        async function parseJsonLines(content, targetCount) {
+            addLog(`JSONL parsing başlatılıyor, hedef: ${targetCount} soru`, 'process');
+            
+            const questions = [];
+            const lines = content.split('\n');
+            const totalLines = lines.length;
+            
+            addLog(`Toplam ${totalLines} satır bulundu`, 'info');
+            
+            // Rastgele satırlar seç (memory efficient)
+            const selectedLines = [];
+            const maxSample = Math.min(targetCount * 5, 1000); // En fazla 1000 satır sample
+            
+            for (let i = 0; i < maxSample && selectedLines.length < targetCount * 2; i++) {
+                const randomIndex = Math.floor(Math.random() * totalLines);
+                const line = lines[randomIndex]?.trim();
+                
+                if (line && line.startsWith('{') && line.endsWith('}')) {
+                    selectedLines.push(line);
+                }
+            }
+            
+            addLog(`${selectedLines.length} geçerli JSON satırı seçildi`, 'info');
+            
+            // Seçilen satırları parse et
+            for (let i = 0; i < selectedLines.length && questions.length < targetCount * 3; i++) {
+                try {
+                    const obj = JSON.parse(selectedLines[i]);
+                    
+                    if ((obj.question_title || obj.question) && (obj.best_answer || obj.answer)) {
+                        questions.push(obj);
+                        
+                        if (questions.length % 10 === 0) {
+                            addLog(`JSONL'den ${questions.length} soru parse edildi...`, 'info');
+                        }
+                    }
+                } catch (parseError) {
+                    // Bu satır parse edilemedi, devam et
+                    continue;
+                }
+            }
+            
+            addLog(`JSONL'den toplam ${questions.length} soru çıkarıldı`, 'success');
+            return questions;
         }
 
         // Regex ile soru çıkarma (son çare)
@@ -665,7 +730,14 @@ CEVAP: [Türkçe cevap]`;
             });
 
             if (!response.ok) {
-                throw new Error(`Translation API error: ${response.status}`);
+                const errorText = await response.text();
+                if (response.status === 401) {
+                    throw new Error(`API Key geçersiz (401). OpenRouter key'inizi kontrol edin: ${errorText}`);
+                } else if (response.status === 429) {
+                    throw new Error(`Rate limit aşıldı (429). Biraz bekleyin: ${errorText}`);
+                } else {
+                    throw new Error(`Translation API error (${response.status}): ${errorText}`);
+                }
             }
 
             const data = await response.json();
@@ -700,7 +772,14 @@ Soru: ${turkishQuestion}`;
             });
 
             if (!response.ok) {
-                throw new Error(`AI answer API error: ${response.status}`);
+                const errorText = await response.text();
+                if (response.status === 401) {
+                    throw new Error(`API Key geçersiz (401). OpenRouter key'inizi kontrol edin: ${errorText}`);
+                } else if (response.status === 429) {
+                    throw new Error(`Rate limit aşıldı (429). Biraz bekleyin: ${errorText}`);
+                } else {
+                    throw new Error(`AI answer API error (${response.status}): ${errorText}`);
+                }
             }
 
             const data = await response.json();
