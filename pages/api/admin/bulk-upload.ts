@@ -28,8 +28,9 @@ export default async function handler(
 ) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization')
+  res.setHeader('Access-Control-Max-Age', '86400')
 
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
@@ -47,8 +48,8 @@ export default async function handler(
     const { adminKey, questions }: BulkUploadRequest = req.body
     const clientIP = getClientIP(req)
 
-    // Rate limiting (3 uploads per hour per IP)
-    const rateLimit = checkRateLimit(`bulk-upload:${clientIP}`, 3, 60 * 60 * 1000)
+    // Rate limiting (10 uploads per hour per IP - daha esnek)
+    const rateLimit = checkRateLimit(`bulk-upload:${clientIP}`, 10, 60 * 60 * 1000)
     
     if (!rateLimit.allowed) {
       return res.status(429).json({

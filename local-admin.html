@@ -346,14 +346,14 @@
 
         // Sabit dosya yolundan okuma fonksiyonu
         async function loadQuestionsFromFixedPath(targetCount = 10) {
-            const filePath = '/home/burki/Code/onlineTuringTest/filtrelenmis_soru_cevaplar.json';
+            const filePath = './filtrelenmis_soru_cevaplar.json';
             
             try {
                 addLog(`Sabit dosya yolundan okuma başlatılıyor: ${filePath}`, 'info');
                 addLog(`Hedef soru sayısı: ${targetCount}`, 'info');
                 
-                // Fetch ile dosyayı oku
-                const response = await fetch(`http://localhost:8080/filtrelenmis_soru_cevaplar.json`);
+                // Fetch ile dosyayı oku (current server port'u kullan)
+                const response = await fetch(`${window.location.origin}/filtrelenmis_soru_cevaplar.json`);
                 
                 if (!response.ok) {
                     throw new Error(`Dosya bulunamadı: ${response.status} ${response.statusText}`);
@@ -917,42 +917,91 @@ Soru: ${turkishQuestion}`;
             addLog(`Hedef site: ${siteUrl}`, 'info');
             addLog(`Admin key: ${adminKey.substring(0, 3)}***`, 'info');
 
-            try {
-                addLog(`API isteği gönderiliyor...`, 'process');
-                
-                const response = await fetch(`${siteUrl}/api/admin/bulk-upload`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        adminKey: adminKey,
-                        questions: questions
-                    })
-                });
+            // Sorular 50'den fazla ise parçalara böl
+            const maxBatchSize = 50;
+            const batches = [];
+            for (let i = 0; i < questions.length; i += maxBatchSize) {
+                batches.push(questions.slice(i, i + maxBatchSize));
+            }
 
-                addLog(`API yanıtı alındı: ${response.status} ${response.statusText}`, 'info');
+            addLog(`Sorular ${batches.length} parçaya bölündü (her parça max ${maxBatchSize} soru)`, 'info');
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    addLog(`HTTP Hata ${response.status}: ${errorText}`, 'error');
-                    alert(`HTTP Hata ${response.status}: ${response.statusText}\n${errorText}`);
-                    return;
+            let totalUploaded = 0;
+            let totalErrors = 0;
+
+            for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+                const batch = batches[batchIndex];
+                addLog(`Parça ${batchIndex + 1}/${batches.length} gönderiliyor (${batch.length} soru)...`, 'process');
+
+                try {
+                    const response = await fetch(`${siteUrl}/api/admin/bulk-upload`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        mode: 'cors',
+                        body: JSON.stringify({
+                            adminKey: adminKey,
+                            questions: batch
+                        })
+                    });
+
+                    addLog(`Parça ${batchIndex + 1} yanıtı: ${response.status} ${response.statusText}`, 'info');
+
+                    if (!response.ok) {
+                        let errorText = '';
+                        try {
+                            const errorData = await response.json();
+                            errorText = errorData.message || response.statusText;
+                        } catch {
+                            errorText = await response.text() || response.statusText;
+                        }
+                        
+                        addLog(`❌ Parça ${batchIndex + 1} hatası: ${response.status} - ${errorText}`, 'error');
+                        totalErrors++;
+                        
+                        // Rate limit hatası ise bekle
+                        if (response.status === 429) {
+                            addLog(`Rate limit hatası, 60 saniye bekleniyor...`, 'warning');
+                            await new Promise(resolve => setTimeout(resolve, 60000));
+                        }
+                        continue;
+                    }
+
+                    const result = await response.json();
+                    addLog(`Parça ${batchIndex + 1} sonucu: ${JSON.stringify(result)}`, 'info');
+                    
+                    if (result.success) {
+                        totalUploaded += result.uploaded || batch.length;
+                        addLog(`✅ Parça ${batchIndex + 1} başarılı: ${result.uploaded || batch.length} soru yüklendi`, 'success');
+                    } else {
+                        addLog(`❌ Parça ${batchIndex + 1} başarısız: ${result.message}`, 'error');
+                        totalErrors++;
+                    }
+
+                    // Parçalar arası bekleme (rate limit için)
+                    if (batchIndex < batches.length - 1) {
+                        addLog(`Rate limit için 5 saniye bekleniyor...`, 'info');
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+                    }
+
+                } catch (error) {
+                    addLog(`❌ Parça ${batchIndex + 1} bağlantı hatası: ${error.message}`, 'error');
+                    totalErrors++;
                 }
+            }
 
-                const result = await response.json();
-                addLog(`API yanıt içeriği: ${JSON.stringify(result)}`, 'info');
-                
-                if (result.success) {
-                    addLog(`✅ ${questions.length} soru başarıyla siteye yüklendi!`, 'success');
-                    alert(`Başarılı! ${questions.length} soru siteye yüklendi.`);
-                } else {
-                    addLog(`❌ Yükleme başarısız: ${result.message}`, 'error');
-                    alert('Hata: ' + result.message);
-                }
-            } catch (error) {
-                addLog(`❌ Bağlantı hatası: ${error.message}`, 'error');
-                alert('Bağlantı hatası: ' + error.message);
+            // Sonuç özeti
+            addLog(`\n📊 YÜKLEME ÖZETI:`, 'info');
+            addLog(`✅ Başarılı: ${totalUploaded} soru`, 'success');
+            addLog(`❌ Hatalı: ${totalErrors} parça`, 'error');
+            addLog(`📝 Toplam: ${questions.length} soru`, 'info');
+
+            if (totalUploaded > 0) {
+                alert(`✅ Yükleme tamamlandı!\n\nBaşarılı: ${totalUploaded} soru\nHatalı: ${totalErrors} parça\nToplam: ${questions.length} soru`);
+            } else {
+                alert(`❌ Hiçbir soru yüklenemedi!\n\nLütfen:\n• Admin key'inizi kontrol edin\n• Site URL'sinin doğru olduğundan emin olun\n• İnternet bağlantınızı kontrol edin`);
             }
         }
     </script>

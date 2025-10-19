@@ -14,7 +14,8 @@ export default async function handler(
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization')
+  res.setHeader('Access-Control-Max-Age', '86400')
 
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
