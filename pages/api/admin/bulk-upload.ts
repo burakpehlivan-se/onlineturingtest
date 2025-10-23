@@ -120,11 +120,11 @@ export default async function handler(
 
     console.log('🔍 Bulk Upload - Processing questions:', processedQuestions.length)
     
-    const result = addQuestionsToPool(processedQuestions)
+    const result = await addQuestionsToPool(processedQuestions)
     console.log('🔍 Bulk Upload - Questions added, total now:', result.length)
     
     // Verify questions were actually saved
-    const verification = getQuestionsPool()
+    const verification = await getQuestionsPool()
     console.log('🔍 Bulk Upload - Verification check, total questions:', verification.length)
 
     res.status(200).json({

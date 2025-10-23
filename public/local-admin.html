@@ -875,7 +875,7 @@ Soru: ${turkishQuestion}`;
         // Not: Eski streaming fonksiyonları kaldırıldı, artık sabit dosya yolu kullanılıyor
 
         async function testConnection() {
-            addLog(`🧪 Netlify DB bağlantı testi başlatılıyor...`, 'info');
+            addLog(`🧪 Bağlantı testi başlatılıyor...`, 'info');
             
             const siteUrl = prompt('Test edilecek site URL\'si:', 'https://guileless-custard-968c67.netlify.app');
             const adminKey = prompt('Admin Key:', 'burkiadmin');
@@ -886,67 +886,48 @@ Soru: ${turkishQuestion}`;
             }
 
             try {
-                // 1. Netlify DB bağlantı testi
-                addLog(`1. Netlify DB bağlantı testi: ${siteUrl}/api/admin/db-test`, 'process');
-                const dbTestResponse = await fetch(`${siteUrl}/api/admin/db-test`, {
+                // 1. GET test
+                addLog(`1. GET test: ${siteUrl}/api/admin/test`, 'process');
+                const getResponse = await fetch(`${siteUrl}/api/admin/test`);
+                addLog(`GET yanıt: ${getResponse.status} ${getResponse.statusText}`, 'info');
+                
+                if (getResponse.ok) {
+                    const getData = await getResponse.json();
+                    addLog(`GET sonuç: ${JSON.stringify(getData)}`, 'success');
+                }
+
+                // 2. POST test (admin key)
+                addLog(`2. POST test: Admin key kontrolü`, 'process');
+                const postResponse = await fetch(`${siteUrl}/api/admin/test`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'text/plain'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         adminKey: adminKey
                     })
                 });
-                
-                addLog(`DB test yanıt: ${dbTestResponse.status} ${dbTestResponse.statusText}`, 'info');
-                
-                if (dbTestResponse.ok) {
-                    const dbData = await dbTestResponse.json();
-                    addLog(`DB test sonuç: ${JSON.stringify(dbData)}`, 'success');
-                    
-                    if (dbData.success) {
-                        addLog(`✅ Netlify DB bağlantısı başarılı!`, 'success');
-                        addLog(`📊 DB İstatistikleri: ${JSON.stringify(dbData.stats)}`, 'info');
-                    }
-                } else {
-                    addLog(`❌ DB test başarısız: ${dbTestResponse.status}`, 'error');
-                }
 
-                // 2. Soru havuzu kontrolü
-                addLog(`2. Soru havuzu kontrolü`, 'process');
-                const questionsResponse = await fetch(`${siteUrl}/api/admin/questions`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain'
-                    },
-                    body: JSON.stringify({
-                        adminKey: adminKey,
-                        action: 'get'
-                    })
-                });
-
-                addLog(`Soru havuzu yanıt: ${questionsResponse.status} ${questionsResponse.statusText}`, 'info');
+                addLog(`POST yanıt: ${postResponse.status} ${postResponse.statusText}`, 'info');
                 
-                if (questionsResponse.ok) {
-                    const questionsData = await questionsResponse.json();
-                    addLog(`Soru havuzu sonuç: ${JSON.stringify(questionsData)}`, questionsData.success ? 'success' : 'error');
+                if (postResponse.ok) {
+                    const postData = await postResponse.json();
+                    addLog(`POST sonuç: ${JSON.stringify(postData)}`, postData.adminKeyValid ? 'success' : 'error');
                     
-                    if (questionsData.success) {
-                        const questionCount = questionsData.questions ? questionsData.questions.length : 0;
-                        addLog(`✅ Soru havuzunda ${questionCount} soru bulundu`, 'success');
-                        alert(`✅ Netlify DB Bağlantı Testi Başarılı!\n\n📊 Veritabanı Durumu:\n• Bağlantı: Aktif\n• Soru Sayısı: ${questionCount}\n• Admin Key: Geçerli`);
+                    if (postData.adminKeyValid) {
+                        alert('✅ Bağlantı başarılı! Admin key geçerli.');
                     } else {
-                        alert(`⚠️ Bağlantı var ama soru havuzu boş!\n\nAdmin key geçerli ancak henüz soru eklenmemiş.`);
+                        alert('❌ Admin key geçersiz! Lütfen kontrol edin.');
                     }
                 } else {
-                    const errorText = await questionsResponse.text();
-                    addLog(`Soru havuzu hatası: ${errorText}`, 'error');
-                    alert(`❌ Soru havuzu erişim hatası: ${questionsResponse.status} ${questionsResponse.statusText}`);
+                    const errorText = await postResponse.text();
+                    addLog(`POST hata: ${errorText}`, 'error');
+                    alert(`❌ Bağlantı hatası: ${postResponse.status} ${postResponse.statusText}`);
                 }
 
             } catch (error) {
                 addLog(`❌ Test hatası: ${error.message}`, 'error');
-                alert(`❌ Netlify DB test hatası: ${error.message}\n\nÖneriler:\n• Site deploy edilmiş mi?\n• Netlify DB kurulumu tamamlandı mı?\n• İnternet bağlantınızı kontrol edin`);
+                alert(`❌ Test hatası: ${error.message}`);
             }
         }
 
@@ -956,7 +937,7 @@ Soru: ${turkishQuestion}`;
                 return;
             }
 
-            addLog(`Netlify DB'ye soru gönderme işlemi başlatılıyor...`, 'info');
+            addLog(`Siteye gönderme işlemi başlatılıyor...`, 'info');
             addLog(`Gönderilecek soru sayısı: ${questions.length}`, 'info');
 
             const siteUrl = prompt('Site URL\'sini girin:', 'https://guileless-custard-968c67.netlify.app');
@@ -970,119 +951,90 @@ Soru: ${turkishQuestion}`;
             addLog(`Hedef site: ${siteUrl}`, 'info');
             addLog(`Admin key: ${adminKey.substring(0, 3)}***`, 'info');
 
-            try {
-                // Önce mevcut soruları temizle (isteğe bağlı)
-                const clearFirst = confirm('Netlify DB\'deki mevcut soruları temizleyip yenilerini eklemek istiyor musunuz?\n\n"Evet" = Önce temizle, sonra ekle\n"Hayır" = Mevcut sorulara ekle');
-                
-                if (clearFirst) {
-                    addLog(`Mevcut sorular temizleniyor...`, 'process');
-                    const clearResponse = await fetch(`${siteUrl}/api/admin/questions`, {
+            // Sorular 50'den fazla ise parçalara böl
+            const maxBatchSize = 50;
+            const batches = [];
+            for (let i = 0; i < questions.length; i += maxBatchSize) {
+                batches.push(questions.slice(i, i + maxBatchSize));
+            }
+
+            addLog(`Sorular ${batches.length} parçaya bölündü (her parça max ${maxBatchSize} soru)`, 'info');
+
+            let totalUploaded = 0;
+            let totalErrors = 0;
+
+            for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+                const batch = batches[batchIndex];
+                addLog(`Parça ${batchIndex + 1}/${batches.length} gönderiliyor (${batch.length} soru)...`, 'process');
+
+                try {
+                    // Direct fetch yöntemi (CORS bypass)
+                    const response = await fetch(`${siteUrl}/api/admin/bulk-upload`, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'text/plain'
+                            'Content-Type': 'text/plain', // CORS preflight bypass
                         },
                         body: JSON.stringify({
                             adminKey: adminKey,
-                            action: 'clear'
+                            questions: batch
                         })
                     });
 
-                    if (clearResponse.ok) {
-                        const clearResult = await clearResponse.json();
-                        if (clearResult.success) {
-                            addLog(`✅ Mevcut sorular temizlendi`, 'success');
-                        } else {
-                            addLog(`⚠️ Temizleme uyarısı: ${clearResult.message}`, 'warning');
+                    addLog(`Parça ${batchIndex + 1} yanıtı: ${response.status} ${response.statusText}`, 'info');
+
+                    if (!response.ok) {
+                        let errorText = '';
+                        try {
+                            const errorData = await response.json();
+                            errorText = errorData.message || response.statusText;
+                        } catch {
+                            errorText = await response.text() || response.statusText;
                         }
-                    } else {
-                        addLog(`❌ Temizleme hatası: ${clearResponse.status}`, 'error');
-                    }
-                }
-
-                // Sorular 100'den fazla ise parçalara böl (Netlify DB için daha büyük batch)
-                const maxBatchSize = 100;
-                const batches = [];
-                for (let i = 0; i < questions.length; i += maxBatchSize) {
-                    batches.push(questions.slice(i, i + maxBatchSize));
-                }
-
-                addLog(`Sorular ${batches.length} parçaya bölündü (her parça max ${maxBatchSize} soru)`, 'info');
-
-                let totalUploaded = 0;
-                let totalErrors = 0;
-
-                for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-                    const batch = batches[batchIndex];
-                    addLog(`Parça ${batchIndex + 1}/${batches.length} Netlify DB'ye gönderiliyor (${batch.length} soru)...`, 'process');
-
-                    try {
-                        const response = await fetch(`${siteUrl}/api/admin/questions`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'text/plain'
-                            },
-                            body: JSON.stringify({
-                                adminKey: adminKey,
-                                action: 'add',
-                                questions: batch
-                            })
-                        });
-
-                        addLog(`Parça ${batchIndex + 1} yanıtı: ${response.status} ${response.statusText}`, 'info');
-
-                        if (!response.ok) {
-                            let errorText = '';
-                            try {
-                                const errorData = await response.json();
-                                errorText = errorData.message || response.statusText;
-                            } catch {
-                                errorText = await response.text() || response.statusText;
-                            }
-                            
-                            addLog(`❌ Parça ${batchIndex + 1} hatası: ${response.status} - ${errorText}`, 'error');
-                            totalErrors++;
-                            continue;
-                        }
-
-                        const result = await response.json();
-                        addLog(`Parça ${batchIndex + 1} sonucu: ${JSON.stringify(result)}`, 'info');
                         
-                        if (result.success) {
-                            const uploaded = result.added || batch.length;
-                            totalUploaded += uploaded;
-                            addLog(`✅ Parça ${batchIndex + 1} başarılı: ${uploaded} soru Netlify DB'ye eklendi`, 'success');
-                        } else {
-                            addLog(`❌ Parça ${batchIndex + 1} başarısız: ${result.message}`, 'error');
-                            totalErrors++;
+                        addLog(`❌ Parça ${batchIndex + 1} hatası: ${response.status} - ${errorText}`, 'error');
+                        totalErrors++;
+                        
+                        // Rate limit hatası ise bekle
+                        if (response.status === 429) {
+                            addLog(`Rate limit hatası, 60 saniye bekleniyor...`, 'warning');
+                            await new Promise(resolve => setTimeout(resolve, 60000));
                         }
+                        continue;
+                    }
 
-                        // Parçalar arası bekleme (DB için)
-                        if (batchIndex < batches.length - 1) {
-                            addLog(`DB işlemi için 2 saniye bekleniyor...`, 'info');
-                            await new Promise(resolve => setTimeout(resolve, 2000));
-                        }
-
-                    } catch (error) {
-                        addLog(`❌ Parça ${batchIndex + 1} bağlantı hatası: ${error.message}`, 'error');
+                    const result = await response.json();
+                    addLog(`Parça ${batchIndex + 1} sonucu: ${JSON.stringify(result)}`, 'info');
+                    
+                    if (result.success) {
+                        totalUploaded += result.uploaded || batch.length;
+                        addLog(`✅ Parça ${batchIndex + 1} başarılı: ${result.uploaded || batch.length} soru yüklendi`, 'success');
+                    } else {
+                        addLog(`❌ Parça ${batchIndex + 1} başarısız: ${result.message}`, 'error');
                         totalErrors++;
                     }
+
+                    // Parçalar arası bekleme (rate limit için)
+                    if (batchIndex < batches.length - 1) {
+                        addLog(`Rate limit için 5 saniye bekleniyor...`, 'info');
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+                    }
+
+                } catch (error) {
+                    addLog(`❌ Parça ${batchIndex + 1} bağlantı hatası: ${error.message}`, 'error');
+                    totalErrors++;
                 }
+            }
 
-                // Sonuç özeti
-                addLog(`\n📊 NETLIFY DB YÜKLEME ÖZETI:`, 'info');
-                addLog(`✅ Başarılı: ${totalUploaded} soru`, 'success');
-                addLog(`❌ Hatalı: ${totalErrors} parça`, 'error');
-                addLog(`📝 Toplam: ${questions.length} soru`, 'info');
+            // Sonuç özeti
+            addLog(`\n📊 YÜKLEME ÖZETI:`, 'info');
+            addLog(`✅ Başarılı: ${totalUploaded} soru`, 'success');
+            addLog(`❌ Hatalı: ${totalErrors} parça`, 'error');
+            addLog(`📝 Toplam: ${questions.length} soru`, 'info');
 
-                if (totalUploaded > 0) {
-                    alert(`✅ Netlify DB'ye yükleme tamamlandı!\n\nBaşarılı: ${totalUploaded} soru\nHatalı: ${totalErrors} parça\nToplam: ${questions.length} soru`);
-                } else {
-                    alert(`❌ Hiçbir soru Netlify DB'ye yüklenemedi!\n\nLütfen:\n• Admin key'inizi kontrol edin\n• Site URL'sinin doğru olduğundan emin olun\n• Netlify DB kurulumunu kontrol edin\n• İnternet bağlantınızı kontrol edin`);
-                }
-
-            } catch (error) {
-                addLog(`❌ Netlify DB yükleme hatası: ${error.message}`, 'error');
-                alert(`❌ Netlify DB yükleme hatası: ${error.message}\n\nÖneriler:\n• Site deploy edilmiş mi?\n• Netlify DB kurulumu tamamlandı mı?\n• Admin key doğru mu?`);
+            if (totalUploaded > 0) {
+                alert(`✅ Yükleme tamamlandı!\n\nBaşarılı: ${totalUploaded} soru\nHatalı: ${totalErrors} parça\nToplam: ${questions.length} soru`);
+            } else {
+                alert(`❌ Hiçbir soru yüklenemedi!\n\nLütfen:\n• Admin key'inizi kontrol edin\n• Site URL'sinin doğru olduğundan emin olun\n• İnternet bağlantınızı kontrol edin`);
             }
         }
 
@@ -1096,7 +1048,7 @@ Soru: ${turkishQuestion}`;
                 return;
             }
 
-            addLog(`Netlify DB'den sorular çekiliyor: ${siteUrl}`, 'info');
+            addLog(`Siteden sorular çekiliyor: ${siteUrl}`, 'info');
 
             try {
                 // Direct fetch yöntemi (CORS bypass)
@@ -1146,10 +1098,10 @@ Soru: ${turkishQuestion}`;
                     saveToLocalStorage();
                     displayQuestions();
                     
-                    addLog(`✅ Netlify DB'den ${siteQuestions.length} soru çekildi, ${newCount} yeni soru eklendi`, 'success');
-                    alert(`✅ Netlify DB'den çekme başarılı!\n\nÇekilen: ${siteQuestions.length} soru\nYeni eklenen: ${newCount} soru\nToplam: ${questions.length} soru`);
+                    addLog(`✅ Siteden ${siteQuestions.length} soru çekildi, ${newCount} yeni soru eklendi`, 'success');
+                    alert(`✅ Başarılı!\n\nSiteden çekilen: ${siteQuestions.length} soru\nYeni eklenen: ${newCount} soru\nToplam: ${questions.length} soru`);
                 } else {
-                    addLog(`❌ Netlify DB'den soru çekme başarısız: ${result.message}`, 'error');
+                    addLog(`❌ Siteden soru çekme başarısız: ${result.message}`, 'error');
                     alert('❌ Hata: ' + result.message);
                 }
 
@@ -1160,7 +1112,7 @@ Soru: ${turkishQuestion}`;
         }
 
         async function clearSiteQuestions() {
-            if (!confirm('⚠️ DİKKAT!\n\nBu işlem Netlify DB\'deki TÜM soruları silecek!\nBu işlem geri alınamaz!\n\nDevam etmek istediğinizden emin misiniz?')) {
+            if (!confirm('⚠️ DİKKAT!\n\nBu işlem sitedeki TÜM soruları silecek!\nBu işlem geri alınamaz!\n\nDevam etmek istediğinizden emin misiniz?')) {
                 return;
             }
 
@@ -1172,7 +1124,7 @@ Soru: ${turkishQuestion}`;
                 return;
             }
 
-            addLog(`Netlify DB soruları temizleniyor: ${siteUrl}`, 'warning');
+            addLog(`Site soruları temizleniyor: ${siteUrl}`, 'warning');
 
             try {
                 // Direct fetch yöntemi (CORS bypass)
@@ -1199,17 +1151,17 @@ Soru: ${turkishQuestion}`;
                     }
                     
                     addLog(`❌ Hata: ${response.status} - ${errorText}`, 'error');
-                    alert(`❌ Netlify DB temizleme hatası: ${errorText}`);
+                    alert(`❌ Site temizleme hatası: ${errorText}`);
                     return;
                 }
 
                 const result = await response.json();
                 
                 if (result.success) {
-                    addLog(`✅ Netlify DB başarıyla temizlendi!`, 'success');
-                    alert('✅ Netlify DB başarıyla temizlendi!\n\nTüm sorular silindi.');
+                    addLog(`✅ Site başarıyla temizlendi!`, 'success');
+                    alert('✅ Site başarıyla temizlendi!\n\nTüm sorular silindi.');
                 } else {
-                    addLog(`❌ Netlify DB temizleme başarısız: ${result.message}`, 'error');
+                    addLog(`❌ Site temizleme başarısız: ${result.message}`, 'error');
                     alert('❌ Hata: ' + result.message);
                 }
 
@@ -1228,11 +1180,11 @@ Soru: ${turkishQuestion}`;
                 return;
             }
 
-            addLog(`Netlify DB soruları görüntüleniyor: ${siteUrl}`, 'info');
+            addLog(`Site soruları görüntüleniyor: ${siteUrl}`, 'info');
 
             try {
                 // Direct fetch yöntemi (CORS bypass)
-                addLog(`Netlify DB'den sorular çekiliyor...`, 'process');
+                addLog(`Direct fetch ile sorular çekiliyor...`, 'process');
                 const response = await fetch(`${siteUrl}/api/admin/questions`, {
                     method: 'POST',
                     headers: {
@@ -1254,7 +1206,7 @@ Soru: ${turkishQuestion}`;
                     }
                     
                     addLog(`❌ Hata: ${response.status} - ${errorText}`, 'error');
-                    alert(`❌ Netlify DB sorularını görüntüleme hatası: ${errorText}`);
+                    alert(`❌ Site sorularını görüntüleme hatası: ${errorText}`);
                     return;
                 }
 
@@ -1262,10 +1214,10 @@ Soru: ${turkishQuestion}`;
                 
                 if (result.success && result.questions) {
                     const siteQuestions = result.questions;
-                    addLog(`✅ Netlify DB'den ${siteQuestions.length} soru alındı`, 'success');
+                    addLog(`✅ Siteden ${siteQuestions.length} soru alındı`, 'success');
                     
-                    // Netlify DB sorularını popup'ta göster
-                    let popup = `📊 NETLIFY DB SORULARI (${siteQuestions.length} adet)\n\n`;
+                    // Site sorularını popup'ta göster
+                    let popup = `📊 SİTE SORULARI (${siteQuestions.length} adet)\n\n`;
                     
                     siteQuestions.slice(0, 10).forEach((q, index) => {
                         popup += `${index + 1}. ${q.question.substring(0, 60)}...\n`;
@@ -1276,11 +1228,11 @@ Soru: ${turkishQuestion}`;
                         popup += `... ve ${siteQuestions.length - 10} soru daha\n\n`;
                     }
                     
-                    popup += `💡 İpucu: "Siteden Çek" butonunu kullanarak bu soruları Netlify DB'den yerel havuzunuza ekleyebilirsiniz.`;
+                    popup += `💡 İpucu: "Siteden Çek" butonunu kullanarak bu soruları yerel havuzunuza ekleyebilirsiniz.`;
                     
                     alert(popup);
                 } else {
-                    addLog(`❌ Netlify DB sorularını görüntüleme başarısız: ${result.message}`, 'error');
+                    addLog(`❌ Site sorularını görüntüleme başarısız: ${result.message}`, 'error');
                     alert('❌ Hata: ' + result.message);
                 }
 
@@ -1291,24 +1243,24 @@ Soru: ${turkishQuestion}`;
         }
 
         async function syncWithSite() {
-            if (!confirm('🔄 Netlify DB ile senkronizasyon yapılacak.\n\nBu işlem:\n• Netlify DB\'deki tüm soruları yerel havuza ekler\n• Yerel havuzdaki tüm soruları Netlify DB\'ye gönderir\n\nDevam etmek istiyor musunuz?')) {
+            if (!confirm('🔄 Site ile senkronizasyon yapılacak.\n\nBu işlem:\n• Sitedeki tüm soruları yerel havuza ekler\n• Yerel havuzdaki tüm soruları siteye gönderir\n\nDevam etmek istiyor musunuz?')) {
                 return;
             }
 
-            addLog(`Netlify DB senkronizasyonu başlatılıyor...`, 'info');
+            addLog(`Site senkronizasyonu başlatılıyor...`, 'info');
             
             try {
-                // Önce Netlify DB'den soruları çek
+                // Önce siteden soruları çek
                 await loadQuestionsFromSite();
                 
-                // Sonra yerel soruları Netlify DB'ye gönder
+                // Sonra yerel soruları siteye gönder
                 if (questions.length > 0) {
-                    addLog(`Yerel sorular Netlify DB'ye gönderiliyor...`, 'info');
+                    addLog(`Yerel sorular siteye gönderiliyor...`, 'info');
                     await deployQuestions();
                 }
                 
-                addLog(`✅ Netlify DB senkronizasyonu tamamlandı!`, 'success');
-                alert('✅ Senkronizasyon tamamlandı!\n\nNetlify DB ve yerel havuz artık senkronize.');
+                addLog(`✅ Site senkronizasyonu tamamlandı!`, 'success');
+                alert('✅ Senkronizasyon tamamlandı!\n\nSite ve yerel havuz artık senkronize.');
                 
             } catch (error) {
                 addLog(`❌ Senkronizasyon hatası: ${error.message}`, 'error');

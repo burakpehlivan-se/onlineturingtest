@@ -1,11 +1,21 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getQuestionsPool, clearQuestionsPool, deleteQuestionFromPool } from '../../../lib/questions-store'
+import { getQuestionsPool, clearQuestionsPool, deleteQuestionFromPool, addQuestionsToPool } from '../../../lib/questions-store'
 import { checkRateLimit, getClientIP } from '../../../lib/rate-limiter'
 
 interface QuestionsRequest {
   adminKey: string
-  action: 'get' | 'clear' | 'delete'
+  action: 'get' | 'clear' | 'delete' | 'add'
   questionId?: string
+  questions?: Array<{
+    id?: string
+    question: string
+    answerAI: string
+    answerHuman: string
+    source?: string
+    originalQuestion?: string
+    originalAnswer?: string
+    isTranslated?: boolean
+  }>
 }
 
 interface QuestionsResponse {
@@ -22,6 +32,8 @@ interface QuestionsResponse {
     isTranslated?: boolean
   }>
   count?: number
+  added?: number
+  totalInPool?: number
 }
 
 export default async function handler(
@@ -59,7 +71,7 @@ export default async function handler(
       requestData = req.body
     }
     
-    const { adminKey, action, questionId } = requestData
+    const { adminKey, action, questionId, questions } = requestData
     const clientIP = getClientIP(req)
 
     // Rate limiting (20 requests per hour per IP)
@@ -83,25 +95,67 @@ export default async function handler(
     }
 
     // Action kontrolü
-    if (!action || !['get', 'clear', 'delete'].includes(action)) {
+    if (!action || !['get', 'clear', 'delete', 'add'].includes(action)) {
       return res.status(400).json({
         success: false,
-        message: 'Geçerli action gerekli: get, clear, delete'
+        message: 'Geçerli action gerekli: get, clear, delete, add'
       })
     }
 
     switch (action) {
       case 'get':
-        const questions = getQuestionsPool()
+        const questionsData = await getQuestionsPool()
         return res.status(200).json({
           success: true,
-          message: `${questions.length} soru bulundu`,
-          questions: questions,
-          count: questions.length
+          message: `${questionsData.length} soru bulundu`,
+          questions: questionsData,
+          count: questionsData.length
+        })
+
+      case 'add':
+        if (!questions || !Array.isArray(questions) || questions.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Geçerli soru listesi gerekli'
+          })
+        }
+
+        // Validate each question
+        for (const q of questions) {
+          if (!q.question || !q.answerAI || !q.answerHuman) {
+            return res.status(400).json({
+              success: false,
+              message: 'Her soru için question, answerAI ve answerHuman alanları gerekli'
+            })
+          }
+        }
+
+        // Process and add questions
+        const processedQuestions = questions.map(q => ({
+          id: q.id || `q_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+          question: q.question,
+          answerAI: q.answerAI,
+          answerHuman: q.answerHuman,
+          source: q.source || 'Admin Panel',
+          originalQuestion: q.originalQuestion || '',
+          originalAnswer: q.originalAnswer || '',
+          isTranslated: q.isTranslated || false
+        }))
+
+        console.log('🔍 Questions API - Adding questions:', processedQuestions.length)
+        
+        const result = await addQuestionsToPool(processedQuestions)
+        console.log('🔍 Questions API - Questions added, total now:', result.length)
+        
+        return res.status(200).json({
+          success: true,
+          message: `${processedQuestions.length} soru başarıyla eklendi`,
+          added: processedQuestions.length,
+          totalInPool: result.length
         })
 
       case 'clear':
-        clearQuestionsPool()
+        await clearQuestionsPool()
         return res.status(200).json({
           success: true,
           message: 'Tüm sorular silindi',
@@ -116,7 +170,7 @@ export default async function handler(
           })
         }
         
-        const deleted = deleteQuestionFromPool(questionId)
+        const deleted = await deleteQuestionFromPool(questionId)
         if (deleted) {
           return res.status(200).json({
             success: true,

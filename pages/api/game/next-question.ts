@@ -52,7 +52,7 @@ export default async function handler(
       })
     }
 
-    const questionPool = loadQuestionsPool()
+    const questionPool = await loadQuestionsPool()
 
     if (questionPool.length === 0) {
       // Soru havuzu boş - bu durumda error döndür
