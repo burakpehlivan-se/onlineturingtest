@@ -32,7 +32,7 @@ export default async function handler(
 
     console.log('🕐 Cron Job: Sürekli soru ekleme başlıyor...')
     
-    const currentPool = loadQuestionsPool()
+    const currentPool = await loadQuestionsPool()
     const currentSize = currentPool.length
     
     console.log(`📊 Mevcut soru havuzu boyutu: ${currentSize}`)

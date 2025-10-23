@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { loadQuestionsPool, saveQuestionsPool } from '../../../lib/questions-store'
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method not allowed' })
   }
@@ -20,7 +20,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Soruları yükle
-    const questions = loadQuestionsPool()
+    const questions = await loadQuestionsPool()
     
     // Soruyu bul
     const questionIndex = questions.findIndex(q => q.id === questionId)
@@ -32,7 +32,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     questions.splice(questionIndex, 1)
     
     // Kaydet
-    saveQuestionsPool(questions)
+    await saveQuestionsPool(questions)
 
     return res.status(200).json({
       success: true,

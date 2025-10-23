@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { loadQuestionsPool } from '../../../lib/questions-store'
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method not allowed' })
   }
@@ -16,7 +16,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Soruları yükle
-    const questions = loadQuestionsPool()
+    const questions = await loadQuestionsPool()
 
     return res.status(200).json({
       success: true,

@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 2. Soru havuzunu yükle
     console.log('\n📚 2. SORU HAVUZU YÜKLENIYOR')
-    const questionPool = loadQuestionsPool()
+    const questionPool = await loadQuestionsPool()
     console.log(`   ✓ Sorular yüklendi: ${questionPool.length} soru`)
 
     if (questionPool.length === 0) {

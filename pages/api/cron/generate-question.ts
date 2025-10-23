@@ -38,7 +38,7 @@ export default async function handler(
   }
 
   try {
-    const questions = loadQuestionsPool()
+    const questions = await loadQuestionsPool()
 
     const newQuestions = SAMPLE_QUESTIONS.filter(
       (q) => !questions.some((existing: any) => existing.question === q.question)
@@ -96,7 +96,7 @@ export default async function handler(
     }
 
     if (newQuestions.length > 0) {
-      const updatedQuestions = addQuestionsToPool(newQuestions)
+      const updatedQuestions = await addQuestionsToPool(newQuestions)
       logQuestionsGenerated(newQuestions.length, updatedQuestions.length)
 
       console.log(`\n📚 SORU HAVUZU GÜNCELLENDİ`)
@@ -107,7 +107,7 @@ export default async function handler(
       console.log(`\n📚 SORU HAVUZU ZATEN DOLU - ${questions.length} soru mevcut\n`)
     }
 
-    const finalQuestions = newQuestions.length > 0 ? loadQuestionsPool() : questions
+    const finalQuestions = newQuestions.length > 0 ? await loadQuestionsPool() : questions
     res.status(200).json({
       success: true,
       addedCount: newQuestions.length,
