@@ -15,7 +15,7 @@ export const handler: Handler = async (event, context) => {
 
   try {
     // Check current question pool size
-    const currentQuestions = loadQuestionsPool()
+    const currentQuestions = await loadQuestionsPool()
     const currentCount = currentQuestions.length
 
     // Only process if we have less than 50 questions
@@ -37,7 +37,7 @@ export const handler: Handler = async (event, context) => {
     await questionProcessor.processBatchQuestions(questionsToAdd)
 
     // Get updated count
-    const updatedQuestions = loadQuestionsPool()
+    const updatedQuestions = await loadQuestionsPool()
     
     return {
       statusCode: 200,
